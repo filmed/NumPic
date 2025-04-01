@@ -9,12 +9,19 @@ from customtkinter import filedialog
 from PIL import Image, ImageTk
 import colour
 import math
-
+import json
 from CanvasWidget import ImageCanvas
 from Pallet import PalletSquare
+from pathlib import Path
 
-ctk.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
-ctk.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
+root_folder = Path(__file__).parents[1]
+themes_path = root_folder / "resources/theme.json"
+ctk.set_default_color_theme(themes_path)
+
+# Загружаем JSON-тему
+with open(themes_path, "r") as file:
+    theme = json.load(file)
+
 
 
 def nothing(*arg):
@@ -245,13 +252,14 @@ class App(ctk.CTk):
         self.canvases_frame.grid_rowconfigure(0, weight=1)
         self.canvases_frame.grid_columnconfigure((0, 1), weight=1)
 
-        self.dcanvas_frame = ctk.CTkFrame(self.canvases_frame, corner_radius=6, border_width=3, border_color="#949cb5")
+        self.dcanvas_frame = ctk.CTkFrame(self.canvases_frame)
         self.dcanvas_frame.grid(row=0, column=0, padx=(15, 15), pady=(30, 15), sticky="nsew")
         self.dcanvas = ImageCanvas(self.dcanvas_frame)
         self.dcanvas.canvas.bind("<Enter>", lambda event: self.OnChangeUseZone(event, 0))
+        self.dcanvas.configure(corner_radius=40)
 
         # Render canvas frame
-        self.rcanvas_frame = ctk.CTkFrame(self.canvases_frame, corner_radius=6 , border_width=3, border_color="#949cb5")
+        self.rcanvas_frame = ctk.CTkFrame(self.canvases_frame)
         self.rcanvas_frame.grid(row=0, column=1, padx=(15, 15), pady=(30, 15), sticky="nsew")
         self.rcanvas = ImageCanvas(self.rcanvas_frame)
         self.rcanvas.canvas.bind("<Enter>", lambda event: self.OnChangeUseZone(event, 1))
@@ -306,4 +314,5 @@ class App(ctk.CTk):
         CURRENT_USE_ZONE = self.canvases[key]
 
 app = App()
+
 app.mainloop()

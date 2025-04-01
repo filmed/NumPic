@@ -1,11 +1,40 @@
 import math
 import customtkinter as ctk
 from PIL import Image, ImageTk, ImageDraw
-
+import json
+from pathlib import Path
 # TO DO: Fix moving big images; fix maximize, fix set scale
+
+root_folder = Path(__file__).parents[1]
+themes_path = root_folder / "resources/theme.json"
+ctk.set_default_color_theme(themes_path)
+
+# Загружаем JSON-тему
+with open(themes_path, "r") as file:
+    theme = json.load(file)
+
+def apply_theme(widget, widget_type):
+    print(f'apply {widget}')
+    widget_settings = theme.get(widget_type, {})
+    try:
+        widget.params = widget_settings['params']
+    except:
+        pass
+
+    for param, value in widget_settings.items():
+        if hasattr(widget, "configure") and param != 'params':
+            try:
+                widget.configure(**{param: value})
+                widget.update()
+                print(f'param: { param}; value: {value}')
+            except Exception as e:
+                print(f"Не удалось применить параметр '{param}': {e}")
 
 
 class AutoScrollbar(ctk.CTkScrollbar):
+    def __init__(self, _master, **kwargs):
+        super().__init__(_master, **kwargs)
+        apply_theme(self, "AutoScrollbar")
     def set(self, lo, hi):
         if float(lo) <= 0.0 and float(hi) >= 1.0:
             self.grid_remove()
@@ -16,17 +45,20 @@ class AutoScrollbar(ctk.CTkScrollbar):
 
 class ImageCanvas(ctk.CTkFrame):
     def __init__(self, _master, _grid_state=False, _zoom_delta=5):
-        ctk.CTkFrame.__init__(self, master=_master)
+        super().__init__(_master)
+        apply_theme(_master, "ImageCanvas")
+
+        frame_border = theme.get("ImageCanvas", {})["border_width"]
 
         # Vertical and horizontal scrollbars for canvas
         vbar = AutoScrollbar(self.master, orientation='vertical', border_spacing=0, width=8)
         hbar = AutoScrollbar(self.master, orientation='horizontal', border_spacing=0, height=8)
-        vbar.grid(row=0, column=1, padx=(0, 8), pady=(10, 10), sticky='ns')
-        hbar.grid(row=1, column=0, padx=(10, 10), pady=(0, 8), sticky='we')
+        vbar.grid(row=0, column=1, padx=(0, 0), pady=(0, 0), sticky='ns')
+        hbar.grid(row=1, column=0, padx=(0, 0), pady=(0, 0), sticky='we')
 
         # Init canvas
         self.canvas = ctk.CTkCanvas(self.master, highlightthickness=0, xscrollcommand=hbar.set, yscrollcommand=vbar.set)
-        self.canvas.grid(row=0, column=0, padx=(10, 10), pady=(10, 10), sticky='nswe')
+        self.canvas.grid(row=0, column=0, padx=(8, 8), pady=(8, 8), sticky='nswe')
         self.canvas.update()  # wait until canvas is created
 
         # Move canvas in pixels

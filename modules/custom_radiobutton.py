@@ -1,6 +1,31 @@
 import customtkinter as ctk
 import re
 from PIL import Image, ImageTk,  ImageDraw
+import json
+from pathlib import Path
+
+root_folder = Path(__file__).parents[1]
+themes_path = root_folder / "resources/theme.json"
+ctk.set_default_color_theme(themes_path)
+
+# Загружаем JSON-тему
+with open(themes_path, "r") as file:
+    theme = json.load(file)
+
+
+def apply_theme(widget, widget_type):
+    widget_settings = theme.get(widget_type, {})
+    try:
+        widget.params = widget_settings['params']
+    except:
+        pass
+
+    for param, value in widget_settings.items():
+        if hasattr(widget, "configure") and param != 'params':
+            try:
+                widget.configure(**{param: value})
+            except Exception as e:
+                print(f"Не удалось применить параметр '{param}': {e}")
 
 
 def hex2rgb(_hex):
@@ -21,6 +46,7 @@ class ColorView(ctk.CTkLabel):
     def __init__(self, _master, _color="#ffffff", _color_type="HEX", **kwargs):
         self.master = _master
         super().__init__(self.master, **kwargs)
+        apply_theme(self, "ColorView")
         self.types = ["HEX", "RGB"]
         self.color_type = _color_type
         self.color_hex = None
@@ -88,25 +114,17 @@ class HexColorEntry(ctk.CTkEntry):
         self.delete(0, "end")  # Удаляем текущий текст
         self.insert(0, value)  # Вставляем отфильтрованный текст
 
+
 class CustomRadioButtonFrame(ctk.CTkScrollableFrame):
-    def __init__(self, master, _object_params=None, _columns=None, _padx=(1, 1), _pady=(1, 1), **kwargs):
+    def __init__(self, master, _columns=None, _padx=(1, 1), _pady=(1, 1), **kwargs):
         super().__init__(master, **kwargs)
-        self.params = {"size": 35,
-                       "variable": None,
-                       "value": None,
-                       "corner_radius": 20,
-                       "border_width_normal": 4,
-                       "border_width_selected": 6,
-                       "border_color_normal": "#000000",
-                       "border_color_selected": "#ffffff"}
+        self.params = None
 
-        if _object_params is not None:
-            for param in _object_params:
-                self.params[param] = _object_params[param]
-
+        apply_theme(self, "CustomRadioButtonFrame")
         self.root = master
         self.pallet_colors = {}
-        self.params["variable"] = ctk.StringVar(value="")
+
+        self.variable = ctk.StringVar(value="")
         self.selected_color = None
 
         self.padx = _padx
@@ -143,8 +161,7 @@ class CustomRadioButtonFrame(ctk.CTkScrollableFrame):
 
     def add(self, _color):
         if _color not in self.pallet_colors:
-            self.params["value"] = _color
-            pallet_element = CustomRadioButton(self, _color, self.params)
+            pallet_element = CustomRadioButton(self, _color=_color, _value=_color, _variable=self.variable)
             self.pallet_colors[_color] = pallet_element
             self.columns = self.calc_columns()
             self.rows = self.calc_rows()
@@ -184,25 +201,18 @@ class CustomRadioButtonFrame(ctk.CTkScrollableFrame):
             self._scrollbar.grid_remove()
 
     def get_selected_color(self):
-        return self.params["variable"].get() if self.params["variable"] else None
+        return self.variable.get() if self.variable else None
 
 
 class CustomRadioButton(ctk.CTkLabel):
-    def __init__(self, master, _color="#ffffff", _object_params=None, **kwargs):
+    def __init__(self, master, _color="#ffffff", _value=None, _variable=None, **kwargs):
+        super().__init__(master, text="", **kwargs)
+        self.params = None
+        apply_theme(self, "CustomRadioButton")
+
+        self.value = _value
+        self.variable = _variable
         self.color = _color
-        self.params = {"size": 35,
-                       "variable": None,
-                       "value": _color,
-                       "corner_radius": 20,
-                       "border_width_normal": 4,
-                       "border_width_selected": 6,
-                       "border_color_normal": "#000000",
-                       "border_color_selected": "#ffffff"}
-
-        if _object_params is not None:
-            for param in _object_params:
-                self.params[param] = _object_params[param]
-
         self.image_normal = self.button_image(self.params["size"], self.color, self.params["corner_radius"], self.params["border_color_normal"], border_width=self.params["border_width_normal"])
         self.image_selected = self.button_image(self.params["size"], self.color, self.params["corner_radius"], self.params["border_color_selected"], border_width=self.params["border_width_selected"])
 
@@ -210,8 +220,8 @@ class CustomRadioButton(ctk.CTkLabel):
         self.master = master
         self.bind("<Button-1>", self.on_click)
 
-        if self.params["variable"]:
-            self.params["variable"].trace_add("write", lambda *args: self.update_button())
+        if self.variable:
+            self.variable.trace_add("write", lambda *args: self.update_button())
 
         self.update_button()
 
@@ -231,13 +241,13 @@ class CustomRadioButton(ctk.CTkLabel):
         return ctk.CTkImage(img, size=(size, size))
 
     def on_click(self, event=None):
-        if self.params["variable"]:
-            self.params["variable"].set(self.params["value"])
-            self.master.selected_color = self.params["value"]
+        if self.variable:
+            self.variable.set(self.value)
+            self.master.selected_color = self.value
             self.update_button()
 
     def update_button(self):
-        if self.params["variable"] and self.params["variable"].get() == self.params["value"]:
+        if self.variable and self.variable.get() == self.value:
             self.configure(image=self.image_selected)
         else:
             self.configure(image=self.image_normal)
@@ -260,7 +270,7 @@ entry.grid(row=0, column=0, padx=5, pady=5)
 add_button = ctk.CTkButton(root, command=add, corner_radius=3, fg_color="transparent", text="load", text_color="#6b549c")
 add_button.grid(row=0, column=1, padx=5, pady=5)
 
-pallet_frame = CustomRadioButtonFrame(root, _padx=(0, 0), _pady=(0, 0), _object_params={"corner_radius": 15})
+pallet_frame = CustomRadioButtonFrame(root, _padx=(0, 0), _pady=(0, 0))
 pallet_frame.grid(row=1, rowspan=2, column=0,  padx=0, pady=0, sticky="nsew")
 root.grid_columnconfigure(0, minsize=50, weight=1)
 pallet_frame.fill_pallet(["#ff0000", "#00ff00", "#0000ff", "#ff0001", "#00ff02", "#0000f3", "#ff0004", "#00ff05", "#0000f6"])
