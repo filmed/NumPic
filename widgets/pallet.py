@@ -1,66 +1,30 @@
 import math
-import tkinter as tk
-
-import colour
-import customtkinter as ctk
 import colorsys
 from PIL import Image, ImageTk, ImageDraw, ImageOps
 import ctypes
 
+from widgets.base import BaseWidget
+import customtkinter as ctk
+from utils.color_models import rgb2hex, hex2rgb
+from utils.figures import draw_ellipse
+
 # Monitor scale factor
 scaleFactor = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
 
+class Pallet(BaseWidget, ctk.CTkFrame):
+    subscriptions = {"color_modify": "set_color"}
 
-def hsv2rgb(h,s,v):
-    return tuple(round(i * 255) for i in colorsys.hsv_to_rgb(h,s,v))
+    def __init__(self, master, _event_bus, _is_last=False, **kwargs):
+        ctk.CTkFrame.__init__(self, master=master, **kwargs)
+        BaseWidget.__init__(self, _event_bus=_event_bus)
 
-
-def Draw_ellipse(image, bounds, width=3, outlinecolor='white', fillcolor = 'black', antialias=4):
-
-    _image = image.copy()
-    mask = Image.new(
-        size=[int(dim * antialias) for dim in image.size],
-        mode='L', color='black')
-    draw = ImageDraw.Draw(mask)
-
-    for offset, fill in (width/-2.0, 'white'), (width/2.0, 'black'):
-        left, top = [(value + offset) * antialias for value in bounds[:2]]
-        right, bottom = [(value - offset) * antialias for value in bounds[2:]]
-        draw.ellipse([left, top, right, bottom], fill=fill)
-
-    mask = mask.resize(image.size, Image.Resampling.LANCZOS)
-    # paste outline
-    _image.paste(outlinecolor, mask=mask)
-
-    mask = Image.new(
-        size=[int(dim * antialias) for dim in image.size],
-        mode='L', color='black')
-    draw = ImageDraw.Draw(mask)
-
-    for offset, fill in (width / -2.0, 'black'), (width / 2.0, 'white'):
-        left, top = [(value + offset) * antialias for value in bounds[:2]]
-        right, bottom = [(value - offset) * antialias for value in bounds[2:]]
-        draw.ellipse([left, top, right, bottom], fill=fill)
-
-    mask = mask.resize(image.size, Image.Resampling.LANCZOS)
-    # paste filling
-    _image.paste(fillcolor, mask=mask)
-
-    return _image
-
-class PalletSquare(ctk.CTkFrame):
-    def __init__(self, master, width = 150, height = 150, pointer_r = 10, pointer_border = 3, spectre_width = 30, indent = 5, outline = True, outlinecolor = 'red', _callback = None):
-        super().__init__(master)
-
-        self.callback = _callback
+        self.grid_propagate(False)
         self.grid_columnconfigure(0, weight = 1)
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)
-        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure(0, weight= 1)
 
+        self.outputWidth = int(self.additional_styles.get("width", 150) * scaleFactor)
+        self.outputHeight = int(self.additional_styles.get("height", 150) * scaleFactor)
         # pallet size for show based on monitor DPI scale
-        self.outputWidth = int(width * scaleFactor)
-        self.outputHeight = int(height * scaleFactor)
         self.outputWidth += self.outputWidth % 2
         self.outputHeight += self.outputHeight % 2
 
@@ -69,22 +33,29 @@ class PalletSquare(ctk.CTkFrame):
         self.palletHeight = round(self.outputHeight / (self.outputWidth / self.palletWidth))
         self.hue_d = 900
 
-        self.pointer_r = pointer_r
-        self.pointer_border = pointer_border
-        self.pointer_d = 2*self.pointer_r
+        self.pointer_r = self.additional_styles.get("pointer_radius", 10)
+        self.pointer_border = self.additional_styles.get("pointer_border", 3)
+        self.pointer_d = 2 * self.pointer_r
         self.pointer_moved = False
         self.hpointer_moved = False
 
-        self.spectre_width = spectre_width * scaleFactor
-        self.spectre_r = int(math.sqrt(((self.outputWidth + self.pointer_d) ** 2 + (self.outputHeight + self.pointer_d) ** 2) / 4) + indent * scaleFactor + self.pointer_r + self.spectre_width)
+        self.spectre_width = self.additional_styles.get("spectre_width", 30) * scaleFactor
+        self.spectre_indent = self.additional_styles.get("spectre_indent", 5)
+        self.spectre_r = int(math.sqrt(((self.outputWidth + self.pointer_d) ** 2 + (self.outputHeight + self.pointer_d) ** 2) / 4) + self.spectre_indent * scaleFactor + self.pointer_r + self.spectre_width)
         self.canvas_d = int(2 * (self.spectre_r + self.pointer_r))
+
 
         self.spectre_xSpacing = ((self.canvas_d - (self.outputWidth + self.pointer_d)) / 2)
         self.spectre_ySpacing = ((self.canvas_d - (self.outputHeight + self.pointer_d)) / 2)
 
+        self.border_width = self.additional_styles.get("border_width", 1)
+        self.border_color = self.additional_styles.get("border_color", "#ff0000")
+
+        self.bg_color = self.additional_styles.get("bg_color", "#000000")
+
         # Create canvas and put image on it
-        self.canvas = ctk.CTkCanvas(self.master, highlightthickness=0, borderwidth=0, width =self.canvas_d, height =self.canvas_d, bg=master.cget("bg_color")[0])
-        self.canvas.grid(row=0, column=0, padx=(5, 5), pady=(5, 5))
+        self.canvas = ctk.CTkCanvas(self.master, highlightthickness=0, borderwidth=0, width =self.canvas_d, height =self.canvas_d, bg=self.bg_color)
+        self.canvas.grid(row=0, column=0, padx=(5, 5), pady=(5, 5), sticky="")
         self.canvas.update()  # wait till canvas is created
 
         self.hpointer_x = self.canvas_d / 2 + (self.spectre_r - self.spectre_width / 2) * math.cos(math.radians(0))
@@ -92,12 +63,11 @@ class PalletSquare(ctk.CTkFrame):
         self.hue = 0
         self.get_hue()
 
-        self.current_color = colour.rgb2hex(tuple(i for i in colorsys.hsv_to_rgb(self.hue, 1, 1)), force_long=True)
+        self.current_color = rgb2hex(tuple(int(255*i) for i in colorsys.hsv_to_rgb(self.hue, 1, 1)))
 
-        #self.canvas.bind('<Configure>', self.show_image)     # canvas is resized
-        self.canvas.bind('<ButtonPress-1>', self.move_from)  # leftButtonPress
-        self.canvas.bind('<ButtonRelease-1>', self.stop_move)  # leftButtonPress
-        self.canvas.bind('<B1-Motion>', self.move_to)        # leftButtonPressedMoving
+        self.canvas.bind('<ButtonPress-1>', self.move_from)
+        self.canvas.bind('<ButtonRelease-1>', self.stop_move)
+        self.canvas.bind('<B1-Motion>', self.move_to)
 
         self.pallet = Image.new('RGB', (self.palletWidth, self.palletHeight))  # Create the image
         self.show_image()
@@ -111,19 +81,22 @@ class PalletSquare(ctk.CTkFrame):
 
         self.bbox = self.canvas.bbox(self.imageid)
         self.bbox = (self.bbox[0] - 1, self.bbox[1] - 1, self.bbox[2], self.bbox[3])
-        if outline:
-            self.container = self.canvas.create_rectangle(self.bbox[0], self.bbox[1],self.bbox[2], self.bbox[3], width = 1, outline=outlinecolor)
+        if self.border_width:
+            self.container = self.canvas.create_rectangle(self.bbox[0], self.bbox[1],self.bbox[2], self.bbox[3], width = self.border_width, outline=self.border_color)
 
-        circle = Draw_ellipse(self.rect,[self.pointer_border, self.pointer_border, self.pointer_d - self.pointer_border,self.pointer_d - self.pointer_border], width=self.pointer_border,fillcolor=self.current_color, outlinecolor="#ffffffff")
+        circle = draw_ellipse(self.rect,[self.pointer_border, self.pointer_border, self.pointer_d - self.pointer_border,self.pointer_d - self.pointer_border], width=self.pointer_border, fillcolor=self.current_color, outlinecolor="#ffffffff")
         self.pointer_img = ImageTk.PhotoImage(image=circle)
         self.my_image = self.canvas.create_image(self.pointer_x, self.pointer_y, image=self.pointer_img)
 
-        circle = Draw_ellipse(self.rect,
-                              [self.pointer_border, self.pointer_border, self.pointer_d - self.pointer_border,
-                               self.pointer_d - self.pointer_border], width=self.pointer_border,
-                              fillcolor=self.current_color, outlinecolor="#ffffffff")
+        circle = draw_ellipse(self.rect,[self.pointer_border, self.pointer_border, self.pointer_d - self.pointer_border, self.pointer_d - self.pointer_border], width=self.pointer_border, fillcolor=self.current_color, outlinecolor="#ffffffff")
         self.hpointer_img = ImageTk.PhotoImage(image=circle)
         self.my_himage = self.canvas.create_image(self.hpointer_x, self.hpointer_y, image=self.hpointer_img)
+
+        if _is_last:
+            self.init_subscribes()
+
+        self.get_color()
+
 
     def get_hue(self):
         current_vector = ((self.hpointer_x - self.canvas_d / 2) / self.canvas_d / 2,
@@ -174,14 +147,14 @@ class PalletSquare(ctk.CTkFrame):
         self.get_color()
         self.show_image()
 
-        circle = Draw_ellipse(self.rect,
+        circle = draw_ellipse(self.rect,
                               [self.pointer_border, self.pointer_border, self.pointer_d - self.pointer_border,
                                self.pointer_d - self.pointer_border], width=self.pointer_border,
                               fillcolor=self.current_color, outlinecolor="#ffffffff")
         self.pointer_img = ImageTk.PhotoImage(image=circle)
         self.my_image = self.canvas.create_image(self.pointer_x, self.pointer_y, image=self.pointer_img)
 
-        circle = Draw_ellipse(self.rect,
+        circle = draw_ellipse(self.rect,
                               [self.pointer_border, self.pointer_border, self.pointer_d - self.pointer_border,
                                self.pointer_d - self.pointer_border], width=self.pointer_border,
                               fillcolor=self.current_color, outlinecolor="#ffffffff")
@@ -199,7 +172,7 @@ class PalletSquare(ctk.CTkFrame):
             self.pointer_x = x
             self.pointer_y = y
             self.get_color()
-            circle = Draw_ellipse(self.rect, [self.pointer_border, self.pointer_border, self.pointer_d - self.pointer_border, self.pointer_d - self.pointer_border], width = self.pointer_border, fillcolor=self.current_color, outlinecolor="#ffffffff")
+            circle = draw_ellipse(self.rect, [self.pointer_border, self.pointer_border, self.pointer_d - self.pointer_border, self.pointer_d - self.pointer_border], width = self.pointer_border, fillcolor=self.current_color, outlinecolor="#ffffffff")
             self.pointer_img = ImageTk.PhotoImage(image=circle)
             self.my_image = self.canvas.create_image(x, y, image = self.pointer_img)
             self.hpointer_changed()
@@ -234,7 +207,7 @@ class PalletSquare(ctk.CTkFrame):
                         self.pointer_y = self.bbox[3]
 
             self.get_color()
-            circle = Draw_ellipse(self.rect,[self.pointer_border, self.pointer_border, self.pointer_d - self.pointer_border,self.pointer_d - self.pointer_border], width=self.pointer_border, fillcolor=self.current_color, outlinecolor="#ffffffff")
+            circle = draw_ellipse(self.rect,[self.pointer_border, self.pointer_border, self.pointer_d - self.pointer_border,self.pointer_d - self.pointer_border], width=self.pointer_border, fillcolor=self.current_color, outlinecolor="#ffffffff")
             self.pointer_img = ImageTk.PhotoImage(image=circle)
             self.my_image = self.canvas.create_image(self.pointer_x, self.pointer_y, image=self.pointer_img)
             self.hpointer_changed()
@@ -269,13 +242,32 @@ class PalletSquare(ctk.CTkFrame):
 
         saturation = x / self.outputWidth
         value = 1 - y / self.outputHeight
+        self.current_color = rgb2hex(tuple(round(255*i) for i in colorsys.hsv_to_rgb(self.hue, saturation, value)))
+        self.event_bus.send_state("color_changed", self.current_color)
 
-        self.current_color = colour.rgb2hex(tuple(i for i in colorsys.hsv_to_rgb(self.hue, saturation, value)), force_long=True)
-        if self.callback:
-            self.callback()
-#
-# root = ctk.CTk()
-# dcanvas_frame = ctk.CTkFrame(root, corner_radius=6)
-# dcanvas_frame.grid(row=0, column=0, padx=(0, 0), pady=(0, 0))
-# dcanvas = PalletSquare(dcanvas_frame, width= 200, height = 200,  pointer_r = 10, pointer_border = 5, spectre_width = 15, indent = -10)
-# root.mainloop()
+    def set_color(self, _color):
+        if not _color:
+            return
+
+        r, g, b = (i / 255 for i in hex2rgb(_color))
+        hue, saturation, value = colorsys.rgb_to_hsv(r, g, b)
+
+        self.hue = hue
+        self.current_color = rgb2hex(tuple(round(255 * i) for i in colorsys.hsv_to_rgb(hue, saturation, value)))
+
+        # Обновим координаты pointer (на квадрате палитры)
+        self.pointer_x = self.pointer_r + self.spectre_xSpacing + saturation * self.outputWidth
+        self.pointer_y = self.pointer_r + self.spectre_ySpacing + (1 - value) * self.outputHeight
+
+        # Обновим координаты hpointer (на круге спектра)
+        angle = 360 - hue * 360
+        self.hpointer_x = self.canvas_d / 2 + (self.spectre_r - self.spectre_width / 2) * math.cos(math.radians(angle))
+        self.hpointer_y = self.canvas_d / 2 + (self.spectre_r - self.spectre_width / 2) * math.sin(math.radians(angle))
+
+        self.hpointer_changed()
+
+
+
+
+
+
