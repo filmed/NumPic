@@ -4,6 +4,7 @@ from core.event_bus import EventBus
 from core.theme_manager import ThemeManager
 from core.tool_manager import ToolManager
 from core.file_manager import FileManager
+from core.focus_manager import FocusManager
 from core.models.tools import HandTool, BrushTool, PipetteTool, FillTool, EraseTool
 
 from widgets.base import BaseWidget
@@ -12,6 +13,7 @@ from widgets.container_panel import ContainerPanel
 from widgets.file_open_button import FileOpenButton
 from widgets.pallet_radio_button_frame import PalletRadioButtonFrame
 from widgets.pallet import Pallet
+from widgets.pallet_sliders_frame import PalletSlidersFrame
 from widgets.pallet_display_frame import PalletDisplayFrame
 from widgets.pallet_add_button import PalletAddButton
 from widgets.image_renderer import ImageRenderer
@@ -27,6 +29,7 @@ class App(BaseWidget, ctk.CTk):
         self.file_manager = FileManager(self.event_bus)
         self.theme_manager = ThemeManager(self.event_bus)
         self.theme_manager.change_theme("dark")
+        self.focus_manager = FocusManager(self, self.event_bus)
         self.tool_manager = ToolManager(self.event_bus)
         self.tools = {
                         "hand_tool": HandTool(_event_bus=self.event_bus),
@@ -94,8 +97,8 @@ class App(BaseWidget, ctk.CTk):
         self.left_panel.grid_rowconfigure(1, minsize=required_height)
 
         # временно CustomPanel
-        self.lp_color_modifier = CustomPanel(self.left_panel, self.event_bus, _is_last=True)
-        self.lp_color_modifier.grid(row=2, column=0, padx=(5, 5), pady=(0, 5), sticky="nswe")
+        self.lp_pallet_sliders_frame = PalletSlidersFrame(self.left_panel, self.event_bus, _is_last=True)
+        self.lp_pallet_sliders_frame.grid(row=2, column=0, padx=(5, 5), pady=(0, 5), sticky="nswe")
 
         #   контейнер для отображения цвета и кнопки добавления
         self.lp_display_add_container = ContainerPanel(self.left_panel, self.event_bus, _is_last=True)
@@ -104,7 +107,7 @@ class App(BaseWidget, ctk.CTk):
 
         #   дисплей цвета
         self.lp_pallet_display = PalletDisplayFrame(self.lp_display_add_container, self.event_bus, _is_last=True)
-        self.lp_pallet_display.grid(row=0, column=0, padx=(0, 5), pady=(0, 0), sticky="")
+        self.lp_pallet_display.grid(row=0, column=0, padx=(0, 5), pady=(0, 0), sticky="nsew")
 
 
         #   кнопка добавления

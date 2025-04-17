@@ -158,7 +158,7 @@ class PipetteTool(BaseTool):
         self.renderer = _use_zone
 
     def on_click(self, event):
-        if self.renderer:
+        if self.renderer and self.renderer.img:
             x, y = self.canvas2pixel((event.x, event.y))
             width, height = self.renderer.img.size
             if (0 <= x < width) and (0 <= y <= height):

@@ -248,29 +248,35 @@
       "styles_idle": {
         "width": 30,
         "height": 30,
-        "color": "_secondary",
-        "corner_radius": 2,
-        "border_width": 0,
-        "text": "+",
-        "text_color": "_light_text"
+        "color": "#c9d3d5",
+        "corner_radius": 6,
+        "border_width": 3,
+        "border_color": "_accent",
+        "text": "",
+        "text_color": "_light_text",
+        "icon": "plus_icon.png"
       },
       "styles_click": {
-        "width": 30,
-        "height": 30,
-        "color": "_main",
-        "corner_radius": 2,
-        "border_width": 0,
-        "text": "+",
-        "text_color": "_light_text"
+        "width": 28,
+        "height": 28,
+        "color": "#ccdbd5",
+        "corner_radius": 6,
+        "border_width": 5,
+        "border_color": "_accent",
+        "text": "",
+        "text_color": "_light_text",
+        "icon": "plus_icon.png"
       },
       "styles_hover": {
         "width": 30,
         "height": 30,
-        "color": "_complementary",
-        "corner_radius": 2,
-        "border_width": 0,
-        "text": "+",
-        "text_color": "_light_text"
+        "color": "#c9d3d5",
+        "corner_radius": 6,
+        "border_width": 4,
+        "border_color": "_accent",
+        "text": "",
+        "text_color": "_light_text",
+        "icon": "plus_icon.png"
       }
     }
   },
@@ -400,12 +406,36 @@
   },
 
   "PalletDisplayFrame": {
-    "corner_radius": 2,
+    "corner_radius": 20,
+    "border_width": 3,
+    "border_color": "_accent",
     "width": 200,
     "height": 50,
     "fg_color": "_complementary",
-    "text": ""
+    "text": "",
+    "additional_styles": {
+      "width": 65,
+      "selection_color": "#C36743",
+      "selection_text_color": "#FFFFFF",
+      "entry_border_width": 2,
+      "container_border_width": 0,
+      "entry_padx": [5, 5],
+      "entry_pady": [5, 5],
+      "container_padx": [5, 5],
+      "container_pady": [5, 5],
+      "hash_indent" : 5
+
+    }
   },
+  "ColorSlider": {
+    "fg_color": "red",
+    "bg": "#ff00ff",
+    "additional_styles": {
+      "width": 200,
+      "height": 20
+    }
+  },
+
 
   "ImageRenderer": {
     "corner_radius": 5,
