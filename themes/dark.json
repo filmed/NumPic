@@ -2,7 +2,7 @@
    "_colors": {
     "_main": "#3b3531",
     "_secondary": "#6c655e",
-    "_accent": "#cecaba",
+    "_accent": "#eae6d6",
     "_complementary": "#374448",
     "_light_text": "#fff3ee",
     "_dark_text": "#0d0400"
@@ -248,7 +248,7 @@
       "styles_idle": {
         "width": 30,
         "height": 30,
-        "color": "#c9d3d5",
+        "color": "#ecf6f8",
         "corner_radius": 6,
         "border_width": 3,
         "border_color": "_accent",
@@ -262,7 +262,7 @@
         "color": "#ccdbd5",
         "corner_radius": 6,
         "border_width": 5,
-        "border_color": "_accent",
+        "border_color": "#ccdbd5",
         "text": "",
         "text_color": "_light_text",
         "icon": "plus_icon.png"
@@ -270,10 +270,10 @@
       "styles_hover": {
         "width": 30,
         "height": 30,
-        "color": "#c9d3d5",
+        "color": "#A2A2A2",
         "corner_radius": 6,
         "border_width": 4,
-        "border_color": "_accent",
+        "border_color": "#A2A2A2",
         "text": "",
         "text_color": "_light_text",
         "icon": "plus_icon.png"
@@ -323,6 +323,32 @@
       }
     }
   },
+  "PalletClusterCenterRadioButton": {
+    "corner_radius": 0,
+    "fg_color": "transparent",
+    "text": "",
+    "text_color": ["gray14", "gray84"],
+    "additional_styles": {
+      "styles_on": {
+        "size": 30,
+        "color": "_secondary",
+        "border_color": "#000000",
+        "inner_border_color": "#fefde9",
+        "border_width": 1,
+        "inner_border_width": 2,
+        "corner_radius": 1
+       },
+      "styles_off": {
+        "size": 30,
+        "color": "_secondary",
+        "border_color": "#000000",
+        "inner_border_color": "#FFFFFF",
+        "border_width": 2,
+        "inner_border_width": 1,
+        "corner_radius": 1
+      }
+    }
+  },
   "ToolRadioButton": {
     "corner_radius": 0,
     "fg_color": "transparent",
@@ -343,7 +369,8 @@
           "brush_tool": "brush_tool_icon.png",
           "pipette_tool": "pipette_tool_icon.png",
           "fill_tool": "fill_tool_icon.png",
-          "erase_tool": "erase_tool_icon.png"
+          "erase_tool": "erase_tool_icon.png",
+          "center_chooser_tool": "center_chooser_tool.png"
         }
        },
       "styles_on": {
@@ -360,7 +387,8 @@
           "brush_tool": "brush_tool_icon.png",
           "pipette_tool": "pipette_tool_icon.png",
           "fill_tool": "fill_tool_icon.png",
-          "erase_tool": "erase_tool_icon2.png"
+          "erase_tool": "erase_tool_icon2.png",
+          "center_chooser_tool": "center_chooser_tool.png"
 
         }
       }
@@ -374,6 +402,13 @@
     }
   },
   "PalletRadioButtonFrame": {
+    "fg_color": "_complementary",
+    "additional_styles": {
+      "padx": [0, 0],
+      "pady": [0, 0]
+    }
+  },
+   "PalletClustersCentersFrame": {
     "fg_color": "_complementary",
     "additional_styles": {
       "padx": [0, 0],
@@ -445,11 +480,11 @@
     "border_color": ["_accent", "gray28"],
      "additional_styles": {
        "canvas_bg": "#6E6E6E",
-       "out_border_color": "#000000",
-       "out_border_width": 2,
-       "mid_border_color": "#ffffff",
-       "mid_border_width": 4,
-       "inner_border_color": "#000000",
+       "out_border_color": "#ffffff",
+       "out_border_width": 3,
+       "mid_border_color": "#000000",
+       "mid_border_width": 1,
+       "inner_border_color": "#555555",
        "inner_border_width": 2
      }
   },

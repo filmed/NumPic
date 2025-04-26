@@ -5,7 +5,7 @@ from widgets.custom_radio_button_frame import CustomRadioButtonFrame
 
 
 class PalletRadioButtonFrame(CustomRadioButtonFrame):
-    subscriptions = {"color_added": "add_color"}
+    subscriptions = {"color_added": "add_color", "color_deleted" : "remove"}
 
     def __init__(self, master, _event_bus, _is_last=False, **kwargs):
         CustomRadioButtonFrame.__init__(self, master=master, _event_bus=_event_bus, **kwargs)
@@ -26,4 +26,10 @@ class PalletRadioButtonFrame(CustomRadioButtonFrame):
             self.rows = self.calc_rows()
             self.buttons[_color].grid(row=self.rows - 1, column=(len(self.buttons) - 1) % self.columns, padx=self.object_padx, pady=self.object_pady, sticky="nw")
             self.update_scrollbar()
+
+    # def delete_color(self, _color):
+    #     if _color in self.buttons:
+    #         self.buttons[_color].destroy()  # Удалить виджет из GUI
+    #         del self.buttons[_color]  # Удалить из словаря
+    #         self.update_frame()
 

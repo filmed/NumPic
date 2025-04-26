@@ -12,6 +12,7 @@ class FileManager:
         self.current_file_dir = None
 
         self.event_bus.subscribe("file_selected", self.open_file)
+        self.event_bus.subscribe("file_saved", self.save_file)
 
     def open_file(self, _is_opening, _dir=None):
         if not _is_opening:
@@ -28,6 +29,7 @@ class FileManager:
                 image = Image.open(self.current_file)
                 self.event_bus.send_state("file_opened", image)
 
-
+    def save_file(self, _file):
+        pass
 
 

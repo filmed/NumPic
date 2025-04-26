@@ -58,6 +58,8 @@ class ImageRenderer(BaseWidget, ctk.CTkFrame):
         self.canvas.bind('<Enter>', self.on_enter)
 
         # Init start fields
+
+        self.original_img = None
         self.base_img = None
         self.img = None  # img to render
         self.draw = None
@@ -105,6 +107,7 @@ class ImageRenderer(BaseWidget, ctk.CTkFrame):
     def set_image(self, _img: Image):
         try:
             if _img is not None:
+                self.original_img = _img
                 self.base_img = _img
                 self.img = self.base_img.convert('RGBA')
                 self.draw = ImageDraw.Draw(self.img)
@@ -273,3 +276,4 @@ class ImageRenderer(BaseWidget, ctk.CTkFrame):
             #     self.cached_imagetk_scale = self.scale
 
         self.canvas.configure(scrollregion=(0, 0, self.scaled_width, self.scaled_height))
+        self.event_bus.send_state("canvas_rendered", self)

@@ -2,9 +2,6 @@ import customtkinter as ctk
 from widgets.base import BaseWidget
 from widgets.custom_radio_button import CustomRadioButton
 
-import ctypes
-scaleFactor = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
-
 
 class CustomRadioButtonFrame(BaseWidget, ctk.CTkScrollableFrame):
 
@@ -35,14 +32,17 @@ class CustomRadioButtonFrame(BaseWidget, ctk.CTkScrollableFrame):
 
     def remove(self, _key):
         if _key in self.buttons:
+            self.buttons[_key].destroy()
             del self.buttons[_key]
+            self.update_frame()
 
-    # -----------------------------------render----------------------------------------------
+
+            # -----------------------------------render----------------------------------------------
     def init_object_full_size(self, _object: CustomRadioButton):
         if not (self.object_padx and self.object_pady):
             self.object_padx = tuple(self.additional_styles.get("padx", (1, 1)))
             self.object_pady = tuple(self.additional_styles.get("pady", (1, 1)))
-        size = int(_object.size * scaleFactor)
+        size = round(_object.size)
         self.object_full_size = (self.object_padx[0] + size + self.object_padx[1], self.object_pady[0] + size + self.object_pady[1])
 
     def calc_columns(self):

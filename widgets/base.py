@@ -27,6 +27,7 @@ class BaseWidget(ABC):
     def apply_theme(self, _theme):
         if not _theme:
             return
+
         print(self.__class__.__name__)
         widget_theme = _theme.get(self.__class__.__name__, {})
         try:

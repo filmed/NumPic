@@ -3,6 +3,11 @@ from widgets.base import BaseWidget
 import customtkinter as ctk
 from PIL import Image, ImageDraw
 import sprites
+import copy
+from utils.color_models import hex2rgb
+import ctypes
+# Monitor scale factor
+# scl = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
 
 # additional_styles: {
 #   styles_on: {
@@ -15,6 +20,7 @@ import sprites
 #       corner_radius
 #       icon_resizable
 #       icon
+#       icon_color
 #   }
 #  styles_off: {<--->}
 # }
@@ -31,8 +37,8 @@ class CustomRadioButton(BaseWidget, ctk.CTkLabel):
         self.variable = _variable
         self.value = _value
         self.size = None
-        self.styles_on = self.additional_styles.get('styles_on', {'color': '#AAAAAA', 'size': 30})
-        self.styles_off = self.additional_styles.get('styles_off', {'color': '#555555', 'size': 30})
+        self.styles_on = copy.deepcopy(self.additional_styles.get('styles_on', {'color': '#AAAAAA', 'size': 30}))
+        self.styles_off = copy.deepcopy(self.additional_styles.get('styles_off', {'color': '#555555', 'size': 30}))
 
         self.icon_on = self.build_icon(self.styles_on)
         self.icon_off = self.build_icon(self.styles_off)
@@ -78,15 +84,16 @@ class CustomRadioButton(BaseWidget, ctk.CTkLabel):
         return icon
 
     def build_view(self, _styles, _icon=None):
-        size = _styles['size']
+        size = round(_styles['size'])
         self.size = size
         color = _styles.get('color', '#FF000000')
         border_color = _styles.get('border_color', '#FFFFFF')
         inner_border_color = _styles.get('inner_border_color', '#000000')
-        border_width = _styles.get('border_width', 1)
-        inner_border_width = _styles.get('inner_border_width', 1)
-        corner_radius = _styles.get('corner_radius', 5)
+        border_width = round(_styles.get('border_width', 1))
+        inner_border_width = round(_styles.get('inner_border_width', 1))
+        corner_radius = round(_styles.get('corner_radius', 5))
         icon_resizable = _styles.get('icon_resizable', True)
+        icon_color = _styles.get('icon_color', None)
 
         img_size = 2 * size
         img = Image.new("RGBA", (img_size, img_size), (0, 0, 0, 0))
@@ -112,6 +119,15 @@ class CustomRadioButton(BaseWidget, ctk.CTkLabel):
         img = img.resize((size, size), Image.Resampling.LANCZOS)
 
         if _icon:
+            if icon_color and _icon.mode in ('RGB', 'RGBA'):
+                if _icon.mode != 'RGBA':
+                    _icon = _icon.convert('RGBA')
+                r, g, b, a = _icon.split()
+                mask = a if 'A' in _icon.getbands() else None
+                r, g, b = hex2rgb(icon_color)
+                color_layer = Image.new('RGBA', _icon.size, (r, g, b, 255))
+                _icon = Image.composite(color_layer, _icon, mask or _icon)
+
             icon_w, icon_h = _icon.size
             max_icon_size = size - 2 * (border_width + inner_border_width)
 

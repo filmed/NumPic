@@ -5,7 +5,7 @@ from core.theme_manager import ThemeManager
 from core.tool_manager import ToolManager
 from core.file_manager import FileManager
 from core.focus_manager import FocusManager
-from core.models.tools import HandTool, BrushTool, PipetteTool, FillTool, EraseTool
+from core.models.tools import HandTool, BrushTool, PipetteTool, FillTool, EraseTool, CenterChooserTool
 
 from widgets.base import BaseWidget
 from widgets.custom_panel import CustomPanel
@@ -18,6 +18,7 @@ from widgets.pallet_display_frame import PalletDisplayFrame
 from widgets.pallet_add_button import PalletAddButton
 from widgets.image_renderer import ImageRenderer
 from widgets.tool_radio_button_frame import ToolRadioButtonFrame
+from widgets.pallet_clusters_centers_frame import PalletClustersCentersFrame
 
 
 class App(BaseWidget, ctk.CTk):
@@ -37,6 +38,7 @@ class App(BaseWidget, ctk.CTk):
                         "pipette_tool": PipetteTool(_event_bus=self.event_bus),
                         "fill_tool": FillTool(_event_bus=self.event_bus),
                         "erase_tool": EraseTool(_event_bus=self.event_bus),
+                        "center_chooser_tool": CenterChooserTool(_event_bus=self.event_bus),
                       }
 
         for name, tool in self.tools.items():
@@ -77,8 +79,17 @@ class App(BaseWidget, ctk.CTk):
         self.left_panel.grid_columnconfigure(0, weight=1)
 
         #   плиточная палитра
-        self.lp_pallet_radio_button_frame = PalletRadioButtonFrame(self.left_panel, self.event_bus, _is_last=True)
+        self.lp_pallets_container = ContainerPanel(self.left_panel, _event_bus=self.event_bus, _is_last=True)
+        self.lp_pallets_container.grid(row=0, column=0, padx=(5, 5), pady=(0, 5), sticky='nsew')
+        #   1 row x 2 columns
+        self.lp_pallets_container.grid_rowconfigure(0, weight=1)
+        self.lp_pallets_container.grid_columnconfigure((0, 1), weight=1)
+
+        self.lp_pallet_radio_button_frame = PalletRadioButtonFrame(self.lp_pallets_container, self.event_bus, _is_last=True)
         self.lp_pallet_radio_button_frame.grid(row=0, column=0, padx=(5, 5), pady=(5, 5), sticky="nswe")
+
+        self.lp_pallet_clusters_centers_frame = PalletClustersCentersFrame(self.lp_pallets_container, self.event_bus, _is_last=True)
+        self.lp_pallet_clusters_centers_frame.grid(row=0, column=1, padx=(5, 5), pady=(5, 5), sticky="nswe")
 
         #   палитра
         self.lp_container = ContainerPanel(self.left_panel, _event_bus=self.event_bus, _is_last=True)

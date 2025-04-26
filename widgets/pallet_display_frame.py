@@ -1,6 +1,8 @@
 from widgets.base import BaseWidget
 import customtkinter as ctk
 from utils.color_models import hex2rgb
+from utils.algs import is_child_of
+
 import re
 
 
@@ -21,13 +23,6 @@ class HexEntry(BaseWidget, ctk.CTkEntry):
 
 
     def on_focus_changed(self, _focus_object):
-
-        def is_child_of(widget, parent):
-            while widget is not None:
-                if widget == parent:
-                    return True
-                widget = getattr(widget, "master", None)
-            return False
 
         if is_child_of(_focus_object, self):
             if not self.is_focused:

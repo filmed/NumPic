@@ -3,6 +3,8 @@ from widgets.custom_radio_button import CustomRadioButton
 
 class PalletRadioButton(CustomRadioButton):
 
+    binds = {**CustomRadioButton.binds, "<ButtonRelease-3>": "on_right_button"}
+
     def __init__(self, master, _event_bus, _color, _variable, _value, _is_last=False, **kwargs):
         CustomRadioButton.__init__(self, master=master, _event_bus=_event_bus, _variable=_variable, _value=_value, **kwargs)
         self.color = _color
@@ -17,3 +19,6 @@ class PalletRadioButton(CustomRadioButton):
 
     def on_activate(self, **kwargs):
         self.event_bus.send_state("color_modify", self.color)
+
+    def on_right_button(self, event=None):
+        self.event_bus.send_state("color_deleted", self.color)
