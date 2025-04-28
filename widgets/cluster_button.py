@@ -9,6 +9,5 @@ class ClusterButton(CustomButton):
             self.init_subscribes()
 
     def on_activate(self, **kwargs):
-        print("cluster_button")
         self.event_bus.send_state("cluster_selected", True)
 

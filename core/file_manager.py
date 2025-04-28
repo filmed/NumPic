@@ -36,7 +36,7 @@ class FileManager:
         if not _is_saving:
             return
         data = self.event_bus.get_state("clusters_changed")
-
+        print("saving: ", data)
         if not data:
             return
 

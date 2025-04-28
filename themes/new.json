@@ -607,6 +607,21 @@
     }
   },
 
+  "CustomLabel": {
+    "corner_radius": 0,
+    "fg_color": "transparent",
+    "bg_color": "transparent",
+    "text": "",
+    "additional_styles": {
+        "color": "_main",
+        "corner_radius": 0,
+        "border_width": 0,
+        "text_color": "_highlight",
+        "font": "Inter-Regular-slnt=0.ttf",
+        "font_size": 12
+    }
+  },
+
   "App": {
     "fg_color": "_main"
   }

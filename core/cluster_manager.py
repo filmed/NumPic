@@ -30,7 +30,7 @@ class ClusterManager:
 
 
     def on_cluster_selected(self, _data=None):
-        if not _data:
+        if not _data or not self.editor_use_zone.img:
             return
         count = 4
         w, h = self.editor_use_zone.img.size

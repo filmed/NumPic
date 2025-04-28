@@ -142,7 +142,6 @@ class ColorSlider(BaseWidget, ctk.CTkCanvas):
             r = round((self.master.sliders["r"].pointer_pos))
             g = round(self.master.sliders["g"].pointer_pos)
             b = round(self.master.sliders["b"].pointer_pos)
-            print(r, g, b)
             hex_color = rgb2hex((r, g, b))
         else:  # HSV
             h = self.master.sliders["h"].pointer_pos / 255 * 360

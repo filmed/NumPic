@@ -5,9 +5,7 @@ from PIL import Image, ImageDraw
 import sprites
 import copy
 from utils.color_models import hex2rgb
-import ctypes
-# Monitor scale factor
-# scl = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
+
 
 # additional_styles: {
 #   styles_on: {

@@ -110,6 +110,12 @@ def flood_fill_cv(pil_img: Image.Image, seed_point, fill_color):
     img_rgb = cv2.cvtColor(img_cv, cv2.COLOR_BGR2RGB)
     filled_img = Image.fromarray(img_rgb).convert("RGBA")
 
-
-
     return filled_img
+
+
+def get_text_size(_text, _font):
+    ascent, descent = _font.geometrics()
+    width = _font.getmask(_text).getbbox()[2]
+    height = _font.getmask(_text).getbbox()[3] + descent
+
+    return width, height

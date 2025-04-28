@@ -8,6 +8,8 @@ from core.tool_manager import ToolManager
 from core.file_manager import FileManager
 from core.focus_manager import FocusManager
 from core.models.tools import HandTool, BrushTool, PipetteTool, FillTool, EraseTool, CenterChooserTool
+from core.models.filters import Blur
+from core.cluster_manager import ClusterManager
 
 from widgets.base import BaseWidget
 from widgets.custom_panel import CustomPanel
@@ -24,9 +26,8 @@ from widgets.tool_radio_button_frame import ToolRadioButtonFrame
 from widgets.blur_slider import BlurSlider
 from widgets.pallet_clusters_centers_frame import PalletClustersCentersFrame
 from widgets.count_clusters_entry import CountClustersEntry
-from core.models.filters import Blur
 from widgets.cluster_button import ClusterButton
-from core.cluster_manager import ClusterManager
+from widgets.custom_label import CustomLabel
 
 
 # Monitor scale factor
@@ -164,21 +165,27 @@ class App(BaseWidget, ctk.CTk):
         self.rp_clustering_frame = ContainerPanel(self.right_panel, self.event_bus, _is_last=True)
         self.rp_clustering_frame.grid(row=1, column=0, padx=(10, 10), pady=(30, 0), sticky="nsew")
 
+        self.rp_blur_label = CustomLabel(self.rp_clustering_frame, self.event_bus, _text="Размытие", _is_last=True)
+        self.rp_blur_label.grid(row=0, column=0, padx=(0, 0), pady=(30, 0), sticky="w")
+
         self.rp_blur_slider = BlurSlider(self.rp_clustering_frame, self.event_bus, _is_last=True)
-        self.rp_blur_slider.grid(row=0, column=0, padx=(0, 0), pady=(30, 0), sticky="")
+        self.rp_blur_slider.grid(row=1, column=0, padx=(0, 0), pady=(5, 0), sticky="")
 
         self.rp_clustering_settings_frame = ContainerPanel(self.rp_clustering_frame, self.event_bus, _is_last=True)
-        self.rp_clustering_settings_frame.grid(row=1, column=0, padx=(10, 10), pady=(30, 0), sticky="nsew")
+        self.rp_clustering_settings_frame.grid(row=2, column=0, padx=(0, 0), pady=(5, 0), sticky="nsew")
+
+        self.rp_count_label = CustomLabel(self.rp_clustering_settings_frame, self.event_bus, _text="Количество", _is_last=True)
+        self.rp_count_label.grid(row=0, column=0, padx=(0, 0), pady=(5, 0), sticky="w")
 
         self.rp_count_clusters_entry = CountClustersEntry(self.rp_clustering_settings_frame, self.event_bus, _is_last=True, width=30, height=15)
-        self.rp_count_clusters_entry.grid(row=0, column=1, padx=(0, 0), pady=(0, 0), sticky="")
+        self.rp_count_clusters_entry.grid(row=1, column=0, padx=(0, 0), pady=(5, 0), sticky="w")
 
         self.rp_pallet_clusters_centers_frame = PalletClustersCentersFrame(self.rp_clustering_frame, self.event_bus, _is_last=True)
-        self.rp_pallet_clusters_centers_frame.grid(row=2, column=0, padx=(0, 0), pady=(10, 0), sticky="nsew")
-        self.rp_clustering_frame.grid_rowconfigure(2, minsize=200)
+        self.rp_pallet_clusters_centers_frame.grid(row=3, column=0, padx=(0, 0), pady=(10, 0), sticky="nsew")
+        self.rp_clustering_frame.grid_rowconfigure(3, minsize=200)
 
         self.rp_cluster_button = ClusterButton(self.rp_clustering_frame, self.event_bus, _is_last=True)
-        self.rp_cluster_button.grid(row=3, column=0, padx=(5, 0), pady=(5, 0), sticky='e')
+        self.rp_cluster_button.grid(row=4, column=0, padx=(5, 0), pady=(5, 0), sticky='e')
 
 
 

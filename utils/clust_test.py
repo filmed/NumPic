@@ -56,7 +56,6 @@ def cluster_image_fast(img, k, init_centers=None, iters=10, acc=1.0):
 
     else:
         centers = maximin_centers_fast(img_rgb, k)
-        print(f"centers: {centers}", end="")
         labels = calc_labels_fast(img_rgb, centers)
 
         retval, labels_out, centers_out = cv2.kmeans(
