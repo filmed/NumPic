@@ -275,5 +275,6 @@ class ImageRenderer(BaseWidget, ctk.CTkFrame):
             #     self.cached_imagetk = imagetk
             #     self.cached_imagetk_scale = self.scale
 
+
         self.canvas.configure(scrollregion=(0, 0, self.scaled_width, self.scaled_height))
         self.event_bus.send_state("canvas_rendered", self)

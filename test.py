@@ -12,7 +12,7 @@ import pandas as pd
 count = 4
 ksize = 9
 # start_centers = [(255, 255, 0), (0, 0, 255), (0, 100, 150), (200, 0, 50)]
-start_centers = [(255, 255, 0), (0, 100, 150)]
+start_centers = [(0, 0, 0), (0, 100, 150)]
 
 valid_types = ["jpg", "jpeg", "png", "bmp"]
 file_types = [("Images", "".join(f'*.{valid_type} ' for valid_type in valid_types).strip()), ("All files", "*.*")]
@@ -32,7 +32,10 @@ if file_path and os.path.isfile(file_path):
 
         segmented_image_np, (retvals, labels, centers) = cluster_image_fast(image_np, count, start_centers_BGR)
         labels_2d = labels.reshape((h, w))
-        segmented_image = Image.fromarray(segmented_image_np)
+
+        segmented_image_np_rgb = cv2.cvtColor(segmented_image_np, cv2.COLOR_BGR2RGB)
+        segmented_image = Image.fromarray(segmented_image_np_rgb)
+        segmented_image.show("segmented")
 
         # contours_vec = extract_vector_contours_from_labels(labels_2d)
         contours = contours_from_labels(labels_2d, _type=cv2.CHAIN_APPROX_SIMPLE)
@@ -44,6 +47,7 @@ if file_path and os.path.isfile(file_path):
         smoothed = contours
         base_cnt = draw_vector_contours((new_width, new_height), smoothed)
         cv2.imshow(f"base_cnt", base_cnt)
+
 
         model = joblib.load("epsilon_model3.joblib")
         eps = 0.002

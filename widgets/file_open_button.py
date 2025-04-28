@@ -9,5 +9,5 @@ class FileOpenButton(CustomButton):
             self.init_subscribes()
 
     def on_activate(self, **kwargs):
-        self.event_bus.send_state("file_selected", True)
+        self.event_bus.send_state("file_opening", True)
 

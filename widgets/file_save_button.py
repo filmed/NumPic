@@ -9,5 +9,5 @@ class FileSaveButton(CustomButton):
             self.init_subscribes()
 
     def on_activate(self, **kwargs):
-        self.event_bus.send_state("file_saved", True)
+        self.event_bus.send_state("file_saving", True)
 
