@@ -1,6 +1,7 @@
 from utils.clust_test import cluster_image_fast, contours_from_labels, draw_vector_contours, smooth_contour, export_contours_to_svg
 import numpy as np
-from utils.color_models import hex2rgb
+from utils.color_models import hex2rgb, rgb2hex
+from widgets.pallet_clusters_centers_frame import PalletClustersCentersFrame
 import cv2
 from PIL import Image
 import joblib
@@ -12,7 +13,7 @@ class ClusterManager:
                  event_bus,
                  editor_use_zone,  # Для clustered
                  render_use_zone,  # Для контуров
-                 centers_frame,    # PalletClustersCentersFrame
+                 centers_frame: PalletClustersCentersFrame,    # PalletClustersCentersFrame
                  count_entry       # CountClustersEntry
                  ):
         self.event_bus = event_bus
@@ -30,12 +31,13 @@ class ClusterManager:
 
 
     def on_cluster_selected(self, _data=None):
-        if not _data or not self.editor_use_zone.img:
+        if not _data or not self.editor_use_zone.composited_img:
             return
         count = 4
-        w, h = self.editor_use_zone.img.size
-        image_np = np.array(self.editor_use_zone.img)
-        image_np = cv2.GaussianBlur(image_np, (9, 9), 0)
+        w, h = self.editor_use_zone.composited_img.size
+        image_np = np.array(self.editor_use_zone.composited_img)
+        image_np = cv2.GaussianBlur(image_np, (1, 1), 0)
+        print(self.centers_frame.get_centers())
         start_centers = list(hex2rgb(color) for color in self.centers_frame.get_centers())
         # start_centers_BGR = [(b, g, r) for (r, g, b) in start_centers]
 
@@ -86,11 +88,17 @@ class ClusterManager:
         smoothed_contoured_image = Image.fromarray(smoothed_contoured_image_array)
 
         self.current_contours = smoothed
-        self.current_centers = centers
+        self.current_centers = list(rgb2hex(tuple(color)) for color in centers)
         self.segmented_image = segmented_image
 
-        self.editor_use_zone.set_image(segmented_image)
-        self.render_use_zone.set_image(smoothed_contoured_image)
+        self.event_bus.send_state("centers_delete_all", True)
+        for _center in self.current_centers:
+            self.centers_frame.add_center(_center)
+
+        self.event_bus.send_state("layer_delete_all", True)
+        self.event_bus.send_state("file_opened", (segmented_image, "Segmented image"))
+        # self.editor_use_zone.set_image(segmented_image)
+        self.render_use_zone.set_image((smoothed_contoured_image, "Contours"))
 
         self.event_bus.send_state("clusters_changed", (self.current_contours,  self.current_centers,  self.segmented_image))
 

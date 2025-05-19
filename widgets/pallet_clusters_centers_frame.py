@@ -6,7 +6,7 @@ from widgets.pallet_cluster_center_radio_button import PalletClusterCenterRadioB
 
 
 class PalletClustersCentersFrame(CustomRadioButtonFrame):
-    subscriptions = {"center_added": "add_center", "center_deleted" : "remove"}
+    subscriptions = {"center_add": "add_center", "center_delete" : "remove", "centers_delete_all": "delete_all", "center_color_change": "color_change"}
 
     def __init__(self, master, _event_bus, _is_last=False, **kwargs):
         CustomRadioButtonFrame.__init__(self, master=master, _event_bus=_event_bus, **kwargs)
@@ -14,6 +14,7 @@ class PalletClustersCentersFrame(CustomRadioButtonFrame):
             self.init_subscribes()
 
     def add_center(self, _center_color):
+        print(f'add_center: {_center_color}')
         if not _center_color:
             return
         if _center_color not in self.buttons:
@@ -31,3 +32,30 @@ class PalletClustersCentersFrame(CustomRadioButtonFrame):
 
     def get_centers(self) -> list[str]:
         return list(self.buttons.keys())
+
+
+    def delete_all(self, _data):
+        if _data is None:
+            return
+        if not self.buttons:
+            return
+
+        for _key in self.buttons:
+            self.buttons[_key].grid_forget()
+            self.buttons[_key].destroy()
+        self.buttons.clear()
+
+
+    def color_change(self, _data):
+        if _data is None:
+            return
+
+        _old_color, _new_color = _data
+
+        if _old_color in self.buttons and _new_color not in self.buttons:
+            btn = self.buttons.pop(_old_color)
+            btn.color_change(_new_color)
+            self.buttons[_new_color] = btn
+
+            self.event_bus.send_state("center_color_changed")
+

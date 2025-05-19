@@ -4,6 +4,7 @@ import customtkinter as ctk
 from PIL import Image, ImageDraw, ImageFont
 import sprites
 import fonts
+from utils.color_models import hex2rgb
 
 # additional_styles: {
 #   styles_idle: {
@@ -21,6 +22,7 @@ import fonts
 #       font_size
 #       font
 #       icon
+#       icon_color
 #   }
 #  styles_click: {<--->}
 #  styles_hover: {<--->}
@@ -91,6 +93,7 @@ class CustomButton(BaseWidget, ctk.CTkLabel):
         inner_border_width = _styles.get('inner_border_width', 0)
         corner_radius = _styles.get('corner_radius', 5)
         icon_resizable = _styles.get('icon_resizable', True)
+        icon_color = _styles.get('icon_color', None)
 
         text = _styles.get('text', '')
         if self.value:
@@ -133,6 +136,15 @@ class CustomButton(BaseWidget, ctk.CTkLabel):
 
         #   add icon
         if _icon:
+            if icon_color and _icon.mode in ('RGB', 'RGBA'):
+                if _icon.mode != 'RGBA':
+                    _icon = _icon.convert('RGBA')
+                r, g, b, a = _icon.split()
+                mask = a if 'A' in _icon.getbands() else None
+                r, g, b = hex2rgb(icon_color)
+                color_layer = Image.new('RGBA', _icon.size, (r, g, b, 255))
+                _icon = Image.composite(color_layer, _icon, mask or _icon)
+
             icon_w, icon_h = _icon.size
             max_icon_width = width - 2 * (border_width + inner_border_width)
             max_icon_height = height - 2 * (border_width + inner_border_width)

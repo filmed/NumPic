@@ -1,0 +1,1315 @@
+Index: widgets/custom_radio_button.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import os\r\nfrom widgets.base import BaseWidget\r\nimport customtkinter as ctk\r\nfrom PIL import Image, ImageDraw\r\nimport sprites\r\n\r\n# additional_styles: {\r\n#   styles_on: {\r\n#       !size\r\n#       color\r\n#       border_color\r\n#       inner_border_color\r\n#       border_width\r\n#       inner_border_width\r\n#       corner_radius\r\n#       icon_resizable\r\n#       icon\r\n#   }\r\n#  styles_off: {<--->}\r\n# }\r\n\r\n\r\nclass CustomRadioButton(BaseWidget, ctk.CTkLabel):\r\n\r\n    binds = {**BaseWidget.binds, \"<ButtonPress-1>\": \"on_click\"}\r\n\r\n    def __init__(self, master, _event_bus, _variable, _value, _is_last=False, **kwargs):\r\n        ctk.CTkLabel.__init__(self, master=master, **kwargs)\r\n        BaseWidget.__init__(self, _event_bus=_event_bus)\r\n\r\n        self.variable = _variable\r\n        self.value = _value\r\n        self.size = None\r\n        self.styles_on = self.additional_styles.get('styles_on', {'color': '#AAAAAA', 'size': 30})\r\n        self.styles_off = self.additional_styles.get('styles_off', {'color': '#555555', 'size': 30})\r\n\r\n        self.icon_on = self.build_icon(self.styles_on)\r\n        self.icon_off = self.build_icon(self.styles_off)\r\n\r\n        self.image_on = self.build_view(self.styles_on, self.icon_on)\r\n        self.image_off = self.build_view(self.styles_off, self.icon_off)\r\n\r\n        self.configure(image=self.image_off)\r\n\r\n        if self.variable:\r\n            self.variable.trace_add(\"write\", lambda *args: self.update_button())\r\n\r\n        if _is_last:\r\n            self.init_subscribes()\r\n\r\n    def on_click(self, event=None):\r\n        if self.variable:\r\n            self.variable.set(self.value)\r\n\r\n    def update_button(self):\r\n        if self.variable and self.variable.get() == self.value:\r\n            self.configure(image=self.image_on)\r\n            self.on_activate()\r\n        else:\r\n            self.configure(image=self.image_off)\r\n            self.on_deactivate()\r\n\r\n    def on_activate(self, **kwargs):\r\n        pass\r\n\r\n    def on_deactivate(self, **kwargs):\r\n        pass\r\n\r\n    def build_icon(self, _styles, **kwargs):\r\n        icon = None\r\n        icon_path = _styles.get('icon', None)\r\n        if icon_path:\r\n            sprites_dir = os.path.dirname(sprites.__file__)\r\n            full_path = os.path.join(sprites_dir, os.path.basename(icon_path))\r\n            icon = Image.open(full_path)\r\n            if icon.mode != 'RGBA':\r\n                icon = icon.convert('RGBA')\r\n        return icon\r\n\r\n    def build_view(self, _styles, _icon=None):\r\n        size = _styles['size']\r\n        self.size = size\r\n        color = _styles.get('color', '#FF000000')\r\n        border_color = _styles.get('border_color', '#FFFFFF')\r\n        inner_border_color = _styles.get('inner_border_color', '#000000')\r\n        border_width = _styles.get('border_width', 1)\r\n        inner_border_width = _styles.get('inner_border_width', 1)\r\n        corner_radius = _styles.get('corner_radius', 5)\r\n        icon_resizable = _styles.get('icon_resizable', True)\r\n\r\n        img_size = 2 * size\r\n        img = Image.new(\"RGBA\", (img_size, img_size), (0, 0, 0, 0))\r\n        draw = ImageDraw.Draw(img)\r\n\r\n        draw.rounded_rectangle(\r\n            (0, 0, img_size - 1, img_size - 1),\r\n            radius=corner_radius * 2,\r\n            outline=border_color,\r\n            width=border_width * 2,\r\n            fill=color\r\n        )\r\n\r\n        # Внутренний бордер\r\n        offset = border_width * 2\r\n        draw.rounded_rectangle(\r\n            (offset, offset, img_size - 1 - offset, img_size - 1 - offset),\r\n            radius=corner_radius * 2,\r\n            outline=inner_border_color,\r\n            width=inner_border_width * 2\r\n        )\r\n\r\n        img = img.resize((size, size), Image.Resampling.LANCZOS)\r\n\r\n        if _icon:\r\n            icon_w, icon_h = _icon.size\r\n            max_icon_size = size - 2 * (border_width + inner_border_width)\r\n\r\n            if icon_resizable:\r\n                _icon.thumbnail((max_icon_size, max_icon_size), Image.Resampling.LANCZOS)\r\n                icon_w, icon_h = _icon.size\r\n            else:\r\n                if icon_w > max_icon_size or icon_h > max_icon_size:\r\n                    _icon.thumbnail((max_icon_size, max_icon_size), Image.Resampling.LANCZOS)\r\n                    icon_w, icon_h = _icon.size\r\n\r\n            position = ((size - icon_w) // 2, (size - icon_h) // 2)\r\n\r\n            if _icon.mode == 'RGBA':\r\n                img.paste(_icon, position, mask=_icon)\r\n            else:\r\n                img.paste(_icon, position)\r\n\r\n        return ctk.CTkImage(img, size=(size, size))\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/widgets/custom_radio_button.py b/widgets/custom_radio_button.py
+--- a/widgets/custom_radio_button.py	(revision f3f6907b86634f6391c8cc3d223539b4fbae74ea)
++++ b/widgets/custom_radio_button.py	(date 1745578717057)
+@@ -3,6 +3,8 @@
+ import customtkinter as ctk
+ from PIL import Image, ImageDraw
+ import sprites
++import copy
++from utils.color_models import hex2rgb
+ 
+ # additional_styles: {
+ #   styles_on: {
+@@ -15,6 +17,7 @@
+ #       corner_radius
+ #       icon_resizable
+ #       icon
++#       icon_color
+ #   }
+ #  styles_off: {<--->}
+ # }
+@@ -31,8 +34,8 @@
+         self.variable = _variable
+         self.value = _value
+         self.size = None
+-        self.styles_on = self.additional_styles.get('styles_on', {'color': '#AAAAAA', 'size': 30})
+-        self.styles_off = self.additional_styles.get('styles_off', {'color': '#555555', 'size': 30})
++        self.styles_on = copy.deepcopy(self.additional_styles.get('styles_on', {'color': '#AAAAAA', 'size': 30}))
++        self.styles_off = copy.deepcopy(self.additional_styles.get('styles_off', {'color': '#555555', 'size': 30}))
+ 
+         self.icon_on = self.build_icon(self.styles_on)
+         self.icon_off = self.build_icon(self.styles_off)
+@@ -87,6 +90,7 @@
+         inner_border_width = _styles.get('inner_border_width', 1)
+         corner_radius = _styles.get('corner_radius', 5)
+         icon_resizable = _styles.get('icon_resizable', True)
++        icon_color = _styles.get('icon_color', None)
+ 
+         img_size = 2 * size
+         img = Image.new("RGBA", (img_size, img_size), (0, 0, 0, 0))
+@@ -112,6 +116,15 @@
+         img = img.resize((size, size), Image.Resampling.LANCZOS)
+ 
+         if _icon:
++            if icon_color and _icon.mode in ('RGB', 'RGBA'):
++                if _icon.mode != 'RGBA':
++                    _icon = _icon.convert('RGBA')
++                r, g, b, a = _icon.split()
++                mask = a if 'A' in _icon.getbands() else None
++                r, g, b = hex2rgb(icon_color)
++                color_layer = Image.new('RGBA', _icon.size, (r, g, b, 255))
++                _icon = Image.composite(color_layer, _icon, mask or _icon)
++
+             icon_w, icon_h = _icon.size
+             max_icon_size = size - 2 * (border_width + inner_border_width)
+ 
+Index: widgets/pallet_radio_button_frame.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import customtkinter as ctk\r\nfrom widgets.base import BaseWidget\r\nfrom widgets.pallet_radio_button import PalletRadioButton\r\nfrom widgets.custom_radio_button_frame import CustomRadioButtonFrame\r\n\r\n\r\nclass PalletRadioButtonFrame(CustomRadioButtonFrame):\r\n    subscriptions = {\"color_added\": \"add_color\"}\r\n\r\n    def __init__(self, master, _event_bus, _is_last=False, **kwargs):\r\n        CustomRadioButtonFrame.__init__(self, master=master, _event_bus=_event_bus, **kwargs)\r\n        if _is_last:\r\n            self.init_subscribes()\r\n\r\n    def add_color(self, _color):\r\n        if not _color:\r\n            return\r\n        if _color not in self.buttons:\r\n            button = PalletRadioButton(self, self.event_bus, _color, self.variable, _color, _is_last=True)\r\n            self.buttons[_color] = button\r\n\r\n            if not self.object_full_size:\r\n                self.init_object_full_size(button)\r\n\r\n            self.columns = self.calc_columns()\r\n            self.rows = self.calc_rows()\r\n            self.buttons[_color].grid(row=self.rows - 1, column=(len(self.buttons) - 1) % self.columns, padx=self.object_padx, pady=self.object_pady, sticky=\"nw\")\r\n            self.update_scrollbar()\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/widgets/pallet_radio_button_frame.py b/widgets/pallet_radio_button_frame.py
+--- a/widgets/pallet_radio_button_frame.py	(revision f3f6907b86634f6391c8cc3d223539b4fbae74ea)
++++ b/widgets/pallet_radio_button_frame.py	(date 1744966675648)
+@@ -5,7 +5,7 @@
+ 
+ 
+ class PalletRadioButtonFrame(CustomRadioButtonFrame):
+-    subscriptions = {"color_added": "add_color"}
++    subscriptions = {"color_added": "add_color", "color_deleted" : "remove"}
+ 
+     def __init__(self, master, _event_bus, _is_last=False, **kwargs):
+         CustomRadioButtonFrame.__init__(self, master=master, _event_bus=_event_bus, **kwargs)
+@@ -27,3 +27,9 @@
+             self.buttons[_color].grid(row=self.rows - 1, column=(len(self.buttons) - 1) % self.columns, padx=self.object_padx, pady=self.object_pady, sticky="nw")
+             self.update_scrollbar()
+ 
++    # def delete_color(self, _color):
++    #     if _color in self.buttons:
++    #         self.buttons[_color].destroy()  # Удалить виджет из GUI
++    #         del self.buttons[_color]  # Удалить из словаря
++    #         self.update_frame()
++
+Index: widgets/pallet_sliders_frame.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import customtkinter as ctk\r\nfrom widgets.base import BaseWidget\r\nfrom colorsys import rgb_to_hsv, hsv_to_rgb\r\nfrom utils.color_models import rgb2hex, hex2rgb\r\nfrom utils.figures import draw_ellipse\r\n\r\nfrom PIL import Image, ImageDraw, ImageTk\r\nimport colorsys\r\n\r\n#\r\n# class ColorSlider(BaseWidget, ctk.CTkCanvas):\r\n#\r\n#     binds = {\"<Button-1>\": \"on_click\", \"<B1-Motion>\": \"on_drag\", \"<Configure>\": \"on_resize\"}\r\n#\r\n#     def __init__(self, master, _event_bus, channel: str, _is_last=False, **kwargs):\r\n#         ctk.CTkCanvas.__init__(self, master=master, **kwargs)\r\n#         BaseWidget.__init__(self, _event_bus=_event_bus)\r\n#\r\n#         self.channel = channel.lower()  # 'r', 'g', 'b', 'h', 's', 'v'\r\n#         self.pointer_pos = 0\r\n#         self.pointer_radius = 10\r\n#         self.pointer_border = 3\r\n#         self.gradient_img = None\r\n#         self.width = None\r\n#         self.height = None\r\n#\r\n#         self.build_view()\r\n#\r\n#         if _is_last:\r\n#             self.init_subscribes()\r\n#\r\n#     def build_view(self):\r\n#         self.width = self.additional_styles.get(\"width\", 100)\r\n#         self.height = self.additional_styles.get(\"height\", 20)\r\n#         self.configure(width=self.width, height=self.height)\r\n#         self.grid_propagate(False)\r\n#\r\n#     def on_resize(self, event):\r\n#         if hasattr(self, 'current_color') and hasattr(self, 'color_type'):\r\n#             self.update_slider(self.current_color, self.color_type)\r\n#\r\n#     def build_gradient(self, base_color, color_type):\r\n#         base_width = 5\r\n#\r\n#         # Создаем базовое изображение градиента\r\n#         base_img = Image.new(\"RGB\", (base_width, 1))\r\n#         pixels = base_img.load()\r\n#\r\n#         if color_type == \"RGB\":\r\n#             r, g, b = base_color\r\n#             for x in range(base_width):\r\n#                 value = int(x / (base_width - 1) * 255)\r\n#                 if self.channel == \"r\":\r\n#                     px_color = (value, g, b)\r\n#                 elif self.channel == \"g\":\r\n#                     px_color = (r, value, b)\r\n#                 else:  # 'b'\r\n#                     px_color = (r, g, value)\r\n#                 pixels[x, 0] = px_color\r\n#         else:  # HSV\r\n#             h, s, v = colorsys.rgb_to_hsv(*[c / 255 for c in base_color])\r\n#             for x in range(base_width):\r\n#                 value = x / (base_width - 1)\r\n#                 if self.channel == \"h\":\r\n#                     px_hsv = (value * 360, s, v)\r\n#                 elif self.channel == \"s\":\r\n#                     px_hsv = (h, value, v)\r\n#                 else:  # 'v'\r\n#                     px_hsv = (h, s, value)\r\n#\r\n#                 r, g, b = colorsys.hsv_to_rgb(*px_hsv)\r\n#                 pixels[x, 0] = (int(r * 255), int(g * 255), int(b * 255))\r\n#\r\n#         return base_img.resize((self.width, self.height), Image.Resampling.BILINEAR)\r\n#\r\n#     def update_slider(self, color, color_type):\r\n#         \"\"\"Обновляет градиент и позицию указателя\"\"\"\r\n#         self.current_color = color\r\n#         self.color_type = color_type\r\n#\r\n#         # Получаем растянутое градиентное изображение\r\n#         gradient_img = self.build_gradient(color, color_type)\r\n#         width, height = gradient_img.size\r\n#\r\n#         # Создаем изображение с указателем (в режиме RGBA)\r\n#         pointer_img = Image.new(\"RGBA\", (self.pointer_radius*2, self.pointer_radius*2), (0, 0, 0, 0))\r\n#\r\n#         circle = draw_ellipse(pointer_img,\r\n#                               [self.pointer_border, self.pointer_border, 2*self.pointer_radius - self.pointer_border,\r\n#                                2*self.pointer_radius - self.pointer_border], width=self.pointer_border,\r\n#                               fillcolor=self.current_color, outlinecolor=\"#ffffffff\")\r\n#         self.pointer_img = ImageTk.PhotoImage(image=circle)\r\n#         # Рассчитываем позицию указателя с учетом границ\r\n#         pointer_pos = int(self.pointer_pos / 255 * (width - 1)),0\r\n#\r\n#         # Ограничиваем позицию, чтобы указатель не выходил за границы\r\n#         # pointer_pos = max(self.pointer_radius, min(pointer_pos, width - 1 - self.pointer_radius))\r\n#\r\n#\r\n#         # Объединяем изображения\r\n#         gradient_img = gradient_img.convert(\"RGBA\")\r\n#\r\n#         # Отображаем результат\r\n#         self.gradient_img = ImageTk.PhotoImage(gradient_img)\r\n#         self.delete(\"all\")\r\n#         self.create_image(0, 0, anchor=\"nw\", image=self.gradient_img)\r\n#         self.create_image(pointer_pos, anchor=\"nw\", image=self.pointer_img)\r\n#\r\n#     def on_click(self, event):\r\n#         \"\"\"Обработчик клика мыши\"\"\"\r\n#\r\n#         # Рассчитываем позицию с учетом границ\r\n#         raw_pos = min(max(event.x, self.pointer_radius), self.width - 1 - self.pointer_radius)\r\n#         self.pointer_pos = int((raw_pos / (self.width - 1)) * 255)\r\n#\r\n#         self.update_slider(self.current_color, self.color_type)\r\n#         self.emit_color()\r\n#\r\n#     def on_drag(self, event):\r\n#         self.on_click(event)\r\n#\r\n#     def set_position_from_color(self, color, color_type):\r\n#         \"\"\"Устанавливает позицию указателя на основе цвета\"\"\"\r\n#         if color_type == \"RGB\":\r\n#             rgb = color\r\n#             channel_map = {\"r\": 0, \"g\": 1, \"b\": 2}\r\n#             if self.channel in channel_map:\r\n#                 self.pointer_pos = rgb[channel_map[self.channel]]\r\n#         else:  # HSV\r\n#             h, s, v = colorsys.rgb_to_hsv(*[c / 255 for c in color])\r\n#             if self.channel == \"h\":\r\n#                 self.pointer_pos = int(h * 255)\r\n#             elif self.channel == \"s\":\r\n#                 self.pointer_pos = int(s * 255)\r\n#             elif self.channel == \"v\":\r\n#                 self.pointer_pos = int(v * 255)\r\n#\r\n#         if hasattr(self, 'current_color') and hasattr(self, 'color_type'):\r\n#             self.update_slider(self.current_color, self.color_type)\r\n#\r\n#     def emit_color(self):\r\n#         \"\"\"Отправляет текущий цвет через event_bus\"\"\"\r\n#         if not hasattr(self.master, 'sliders'):\r\n#             return\r\n#\r\n#         if self.master.color_type == \"RGB\":\r\n#             r = round((self.master.sliders[\"r\"].pointer_pos))\r\n#             g = round(self.master.sliders[\"g\"].pointer_pos)\r\n#             b = round(self.master.sliders[\"b\"].pointer_pos)\r\n#             print(r, g, b)\r\n#             hex_color = rgb2hex((r, g, b))\r\n#         else:  # HSV\r\n#             h = self.master.sliders[\"h\"].pointer_pos / 255 * 360\r\n#             s = self.master.sliders[\"s\"].pointer_pos / 255\r\n#             v = self.master.sliders[\"v\"].pointer_pos / 255\r\n#             r, g, b = [int(c * 255) for c in colorsys.hsv_to_rgb(h / 360, s, v)]\r\n#             hex_color = rgb2hex((r, g, b))\r\n#\r\n#         self.event_bus.send_state(\"color_modify\", hex_color.upper())\r\n#\r\n#\r\n# class PalletSlidersFrame(BaseWidget, ctk.CTkFrame):\r\n#     subscriptions = {\"color_changed\": \"on_color_changed\"}\r\n#\r\n#     def __init__(self, master, _event_bus, _is_last=False, **kwargs):\r\n#         ctk.CTkFrame.__init__(self, master=master, **kwargs)\r\n#         BaseWidget.__init__(self, _event_bus=_event_bus)\r\n#\r\n#         self.color_type = \"RGB\"  # По умолчанию RGB\r\n#         self.sliders = {}\r\n#         self.current_color = \"#000000\"\r\n#\r\n#         # Создаем слайдеры для RGB по умолчанию\r\n#         self.refresh_sliders()\r\n#         self.columnconfigure(0, weight=1)\r\n#         self.configure(fg_color=\"transparent\")\r\n#\r\n#         if _is_last:\r\n#             self.init_subscribes()\r\n#\r\n#     def build_view(self):\r\n#         slider_width = self.additional_styles.get(\"slider_width\", 100)\r\n#         slider_height = self.additional_styles.get(\"slider_height\", 20)\r\n#\r\n#\r\n#\r\n#     def set_color_type(self, color_type):\r\n#         \"\"\"Переключает между RGB и HSV режимами\"\"\"\r\n#         if color_type.upper() in (\"RGB\", \"HSV\") and self.color_type != color_type:\r\n#             self.color_type = color_type.upper()\r\n#             self.refresh_sliders()\r\n#\r\n#     def refresh_sliders(self):\r\n#         \"\"\"Обновляет слайдеры в соответствии с текущим цветовым пространством\"\"\"\r\n#         self.clear_sliders()\r\n#\r\n#         channels = \"rgb\" if self.color_type == \"RGB\" else \"hsv\"\r\n#         rgb_color = hex2rgb(self.current_color)\r\n#\r\n#         for i, ch in enumerate(channels):\r\n#             slider = ColorSlider(self, self.event_bus, channel=ch, _is_last=True)\r\n#             slider.grid(row=i, column=0, padx=5, pady=2, sticky=\"\")\r\n#             slider.update_slider(rgb_color, self.color_type)\r\n#             slider.set_position_from_color(rgb_color, self.color_type)\r\n#             self.sliders[ch] = slider\r\n#\r\n#     def clear_sliders(self):\r\n#         \"\"\"Удаляет все текущие слайдеры\"\"\"\r\n#         for slider in self.sliders.values():\r\n#             slider.destroy()\r\n#         self.sliders = {}\r\n#\r\n#     def on_color_changed(self, color: str):\r\n#         \"\"\"Обработчик изменения цвета\"\"\"\r\n#         if color.startswith(\"#\"):\r\n#             self.current_color = color\r\n#             rgb_color = hex2rgb(color)\r\n#             for slider in self.sliders.values():\r\n#                 slider.update_slider(rgb_color, self.color_type)\r\n#                 slider.set_position_from_color(rgb_color, self.color_type)\r\n\r\n\r\n\r\nclass ColorSlider(BaseWidget, ctk.CTkCanvas):\r\n\r\n    binds = {\"<Button-1>\": \"on_click\", \"<B1-Motion>\": \"on_drag\", \"<Configure>\": \"on_resize\"}\r\n\r\n    def __init__(self, master, _event_bus, channel: str, _is_last=False, **kwargs):\r\n        ctk.CTkCanvas.__init__(self, master=master, height=20, **kwargs)\r\n        BaseWidget.__init__(self, _event_bus=_event_bus)\r\n\r\n        self.channel = channel.lower()  # 'r', 'g', 'b', 'h', 's', 'v'\r\n        self.pointer_pos = 0\r\n        self.pointer_radius = 8\r\n        self.pointer_border = 3\r\n        self.gradient_img = None\r\n\r\n        self.build_view()\r\n\r\n        if _is_last:\r\n            self.init_subscribes()\r\n\r\n    def build_view(self):\r\n        self.width = self.additional_styles.get(\"width\", 100)\r\n        self.height = self.additional_styles.get(\"height\", 20)\r\n        self.configure(width=self.width, height=self.height)\r\n        self.grid_propagate(False)\r\n        self.configure(borderwidth=0, highlightthickness=3, highlightcolor=self.master.cget(\"bg_color\")[0])\r\n\r\n    def on_resize(self, event):\r\n        if hasattr(self, 'current_color') and hasattr(self, 'color_type'):\r\n            self.update_slider(self.current_color, self.color_type)\r\n\r\n    def build_gradient(self, base_color, color_type):\r\n        base_width = 10\r\n        height = self.winfo_height() or 20\r\n\r\n        # Создаем базовое изображение градиента\r\n        base_img = Image.new(\"RGB\", (base_width, 1))\r\n        pixels = base_img.load()\r\n\r\n        if color_type == \"RGB\":\r\n            r, g, b = base_color\r\n            for x in range(base_width):\r\n                value = int(x / (base_width - 1) * 255)\r\n                if self.channel == \"r\":\r\n                    px_color = (value, g, b)\r\n                elif self.channel == \"g\":\r\n                    px_color = (r, value, b)\r\n                else:  # 'b'\r\n                    px_color = (r, g, value)\r\n                pixels[x, 0] = px_color\r\n        else:  # HSV\r\n            h, s, v = colorsys.rgb_to_hsv(*[c / 255 for c in base_color])\r\n            for x in range(base_width):\r\n                value = x / (base_width - 1)\r\n                if self.channel == \"h\":\r\n                    px_hsv = (value * 360, s, v)\r\n                elif self.channel == \"s\":\r\n                    px_hsv = (h, value, v)\r\n                else:  # 'v'\r\n                    px_hsv = (h, s, value)\r\n\r\n                r, g, b = colorsys.hsv_to_rgb(*px_hsv)\r\n                pixels[x, 0] = (int(r * 255), int(g * 255), int(b * 255))\r\n\r\n        width = self.winfo_width() or 256\r\n        return base_img.resize((width, height), Image.Resampling.BILINEAR)\r\n\r\n    def update_slider(self, color, color_type):\r\n        self.current_color = color\r\n        self.color_type = color_type\r\n\r\n        # Получаем растянутое градиентное изображение\r\n        gradient_img = self.build_gradient(color, color_type)\r\n        width, height = gradient_img.size\r\n\r\n        # Создаем изображение с указателем (в режиме RGBA)\r\n        # pointer_img = Image.new(\"RGBA\", (width, height), (0, 0, 0, 0))\r\n\r\n        pointer_img = Image.new(\"RGBA\", (self.pointer_radius*2, self.pointer_radius*2), (0, 0, 0, 0))\r\n\r\n        circle = draw_ellipse(pointer_img,\r\n                              [self.pointer_border, self.pointer_border, 2*self.pointer_radius - self.pointer_border,\r\n                               2*self.pointer_radius - self.pointer_border], width=self.pointer_border,\r\n                              fillcolor=self.current_color, outlinecolor=\"#ffffffff\")\r\n        self.pointer_img = ImageTk.PhotoImage(image=circle)\r\n\r\n        # Рассчитываем позицию указателя с учетом границ\r\n        pointer_pos = int(self.pointer_pos / 255 * (width - 1))\r\n\r\n        # Ограничиваем позицию, чтобы указатель не выходил за границы\r\n        pointer_pos = max(self.pointer_radius, min(pointer_pos, width - 1 - self.pointer_radius))\r\n\r\n        bounds = (\r\n            pointer_pos - self.pointer_radius,\r\n            height // 2 - self.pointer_radius)\r\n\r\n        gradient_img = gradient_img.convert(\"RGBA\")\r\n\r\n        self.gradient_img = ImageTk.PhotoImage(gradient_img)\r\n        self.delete(\"all\")\r\n        self.create_image(0, 0, anchor=\"nw\", image=self.gradient_img)\r\n        self.create_image(bounds, anchor=\"nw\", image=self.pointer_img)\r\n\r\n\r\n    def on_click(self, event):\r\n        width = self.winfo_width() or 256\r\n\r\n        raw_pos = min(max(event.x, 0), width - 1)\r\n        self.pointer_pos = int((raw_pos / (width - 1)) * 255)\r\n\r\n        self.update_slider(self.current_color, self.color_type)\r\n        self.emit_color()\r\n\r\n    def on_drag(self, event):\r\n        self.on_click(event)\r\n\r\n    def set_position_from_color(self, color, color_type):\r\n        if color_type == \"RGB\":\r\n            rgb = color\r\n            channel_map = {\"r\": 0, \"g\": 1, \"b\": 2}\r\n            if self.channel in channel_map:\r\n                self.pointer_pos = rgb[channel_map[self.channel]]\r\n        else:  # HSV\r\n            h, s, v = colorsys.rgb_to_hsv(*[c / 255 for c in color])\r\n            if self.channel == \"h\":\r\n                self.pointer_pos = int(h * 255)\r\n            elif self.channel == \"s\":\r\n                self.pointer_pos = int(s * 255)\r\n            elif self.channel == \"v\":\r\n                self.pointer_pos = int(v * 255)\r\n\r\n        if hasattr(self, 'current_color') and hasattr(self, 'color_type'):\r\n            self.update_slider(self.current_color, self.color_type)\r\n\r\n    def emit_color(self):\r\n        if not hasattr(self.master, 'sliders'):\r\n            return\r\n\r\n        if self.master.color_type == \"RGB\":\r\n            r = round((self.master.sliders[\"r\"].pointer_pos))\r\n            g = round(self.master.sliders[\"g\"].pointer_pos)\r\n            b = round(self.master.sliders[\"b\"].pointer_pos)\r\n            print(r, g, b)\r\n            hex_color = rgb2hex((r, g, b))\r\n        else:  # HSV\r\n            h = self.master.sliders[\"h\"].pointer_pos / 255 * 360\r\n            s = self.master.sliders[\"s\"].pointer_pos / 255\r\n            v = self.master.sliders[\"v\"].pointer_pos / 255\r\n            r, g, b = [int(c * 255) for c in colorsys.hsv_to_rgb(h / 360, s, v)]\r\n            hex_color = rgb2hex((r, g, b))\r\n\r\n        self.event_bus.send_state(\"color_modify\", hex_color.upper())\r\n\r\n\r\nclass PalletSlidersFrame(BaseWidget, ctk.CTkFrame):\r\n    subscriptions = {\"color_changed\": \"on_color_changed\"}\r\n\r\n    def __init__(self, master, _event_bus, _is_last=False, **kwargs):\r\n        ctk.CTkFrame.__init__(self, master=master, **kwargs)\r\n        BaseWidget.__init__(self, _event_bus=_event_bus)\r\n\r\n        self.color_type = \"RGB\"  # По умолчанию RGB\r\n        self.sliders = {}\r\n        self.current_color = \"#000000\"\r\n\r\n        self.refresh_sliders()\r\n        self.columnconfigure(0, weight=1)\r\n        self.configure(fg_color=\"transparent\")\r\n\r\n        if _is_last:\r\n            self.init_subscribes()\r\n\r\n    def set_color_type(self, color_type):\r\n        if color_type.upper() in (\"RGB\", \"HSV\") and self.color_type != color_type:\r\n            self.color_type = color_type.upper()\r\n            self.refresh_sliders()\r\n\r\n    def refresh_sliders(self):\r\n        self.clear_sliders()\r\n\r\n        channels = \"rgb\" if self.color_type == \"RGB\" else \"hsv\"\r\n        rgb_color = hex2rgb(self.current_color)\r\n\r\n        for i, ch in enumerate(channels):\r\n            slider = ColorSlider(self, self.event_bus, channel=ch, _is_last=True)\r\n            slider.grid(row=i, column=0, padx=5, pady=2, sticky=\"ew\")\r\n            slider.update_slider(rgb_color, self.color_type)\r\n            slider.set_position_from_color(rgb_color, self.color_type)\r\n            self.sliders[ch] = slider\r\n\r\n    def clear_sliders(self):\r\n        for slider in self.sliders.values():\r\n            slider.destroy()\r\n        self.sliders = {}\r\n\r\n    def on_color_changed(self, color: str):\r\n        if color.startswith(\"#\"):\r\n            self.current_color = color\r\n            rgb_color = hex2rgb(color)\r\n            for slider in self.sliders.values():\r\n                slider.update_slider(rgb_color, self.color_type)\r\n                slider.set_position_from_color(rgb_color, self.color_type)
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/widgets/pallet_sliders_frame.py b/widgets/pallet_sliders_frame.py
+--- a/widgets/pallet_sliders_frame.py	(revision f3f6907b86634f6391c8cc3d223539b4fbae74ea)
++++ b/widgets/pallet_sliders_frame.py	(date 1745578717064)
+@@ -7,220 +7,6 @@
+ from PIL import Image, ImageDraw, ImageTk
+ import colorsys
+ 
+-#
+-# class ColorSlider(BaseWidget, ctk.CTkCanvas):
+-#
+-#     binds = {"<Button-1>": "on_click", "<B1-Motion>": "on_drag", "<Configure>": "on_resize"}
+-#
+-#     def __init__(self, master, _event_bus, channel: str, _is_last=False, **kwargs):
+-#         ctk.CTkCanvas.__init__(self, master=master, **kwargs)
+-#         BaseWidget.__init__(self, _event_bus=_event_bus)
+-#
+-#         self.channel = channel.lower()  # 'r', 'g', 'b', 'h', 's', 'v'
+-#         self.pointer_pos = 0
+-#         self.pointer_radius = 10
+-#         self.pointer_border = 3
+-#         self.gradient_img = None
+-#         self.width = None
+-#         self.height = None
+-#
+-#         self.build_view()
+-#
+-#         if _is_last:
+-#             self.init_subscribes()
+-#
+-#     def build_view(self):
+-#         self.width = self.additional_styles.get("width", 100)
+-#         self.height = self.additional_styles.get("height", 20)
+-#         self.configure(width=self.width, height=self.height)
+-#         self.grid_propagate(False)
+-#
+-#     def on_resize(self, event):
+-#         if hasattr(self, 'current_color') and hasattr(self, 'color_type'):
+-#             self.update_slider(self.current_color, self.color_type)
+-#
+-#     def build_gradient(self, base_color, color_type):
+-#         base_width = 5
+-#
+-#         # Создаем базовое изображение градиента
+-#         base_img = Image.new("RGB", (base_width, 1))
+-#         pixels = base_img.load()
+-#
+-#         if color_type == "RGB":
+-#             r, g, b = base_color
+-#             for x in range(base_width):
+-#                 value = int(x / (base_width - 1) * 255)
+-#                 if self.channel == "r":
+-#                     px_color = (value, g, b)
+-#                 elif self.channel == "g":
+-#                     px_color = (r, value, b)
+-#                 else:  # 'b'
+-#                     px_color = (r, g, value)
+-#                 pixels[x, 0] = px_color
+-#         else:  # HSV
+-#             h, s, v = colorsys.rgb_to_hsv(*[c / 255 for c in base_color])
+-#             for x in range(base_width):
+-#                 value = x / (base_width - 1)
+-#                 if self.channel == "h":
+-#                     px_hsv = (value * 360, s, v)
+-#                 elif self.channel == "s":
+-#                     px_hsv = (h, value, v)
+-#                 else:  # 'v'
+-#                     px_hsv = (h, s, value)
+-#
+-#                 r, g, b = colorsys.hsv_to_rgb(*px_hsv)
+-#                 pixels[x, 0] = (int(r * 255), int(g * 255), int(b * 255))
+-#
+-#         return base_img.resize((self.width, self.height), Image.Resampling.BILINEAR)
+-#
+-#     def update_slider(self, color, color_type):
+-#         """Обновляет градиент и позицию указателя"""
+-#         self.current_color = color
+-#         self.color_type = color_type
+-#
+-#         # Получаем растянутое градиентное изображение
+-#         gradient_img = self.build_gradient(color, color_type)
+-#         width, height = gradient_img.size
+-#
+-#         # Создаем изображение с указателем (в режиме RGBA)
+-#         pointer_img = Image.new("RGBA", (self.pointer_radius*2, self.pointer_radius*2), (0, 0, 0, 0))
+-#
+-#         circle = draw_ellipse(pointer_img,
+-#                               [self.pointer_border, self.pointer_border, 2*self.pointer_radius - self.pointer_border,
+-#                                2*self.pointer_radius - self.pointer_border], width=self.pointer_border,
+-#                               fillcolor=self.current_color, outlinecolor="#ffffffff")
+-#         self.pointer_img = ImageTk.PhotoImage(image=circle)
+-#         # Рассчитываем позицию указателя с учетом границ
+-#         pointer_pos = int(self.pointer_pos / 255 * (width - 1)),0
+-#
+-#         # Ограничиваем позицию, чтобы указатель не выходил за границы
+-#         # pointer_pos = max(self.pointer_radius, min(pointer_pos, width - 1 - self.pointer_radius))
+-#
+-#
+-#         # Объединяем изображения
+-#         gradient_img = gradient_img.convert("RGBA")
+-#
+-#         # Отображаем результат
+-#         self.gradient_img = ImageTk.PhotoImage(gradient_img)
+-#         self.delete("all")
+-#         self.create_image(0, 0, anchor="nw", image=self.gradient_img)
+-#         self.create_image(pointer_pos, anchor="nw", image=self.pointer_img)
+-#
+-#     def on_click(self, event):
+-#         """Обработчик клика мыши"""
+-#
+-#         # Рассчитываем позицию с учетом границ
+-#         raw_pos = min(max(event.x, self.pointer_radius), self.width - 1 - self.pointer_radius)
+-#         self.pointer_pos = int((raw_pos / (self.width - 1)) * 255)
+-#
+-#         self.update_slider(self.current_color, self.color_type)
+-#         self.emit_color()
+-#
+-#     def on_drag(self, event):
+-#         self.on_click(event)
+-#
+-#     def set_position_from_color(self, color, color_type):
+-#         """Устанавливает позицию указателя на основе цвета"""
+-#         if color_type == "RGB":
+-#             rgb = color
+-#             channel_map = {"r": 0, "g": 1, "b": 2}
+-#             if self.channel in channel_map:
+-#                 self.pointer_pos = rgb[channel_map[self.channel]]
+-#         else:  # HSV
+-#             h, s, v = colorsys.rgb_to_hsv(*[c / 255 for c in color])
+-#             if self.channel == "h":
+-#                 self.pointer_pos = int(h * 255)
+-#             elif self.channel == "s":
+-#                 self.pointer_pos = int(s * 255)
+-#             elif self.channel == "v":
+-#                 self.pointer_pos = int(v * 255)
+-#
+-#         if hasattr(self, 'current_color') and hasattr(self, 'color_type'):
+-#             self.update_slider(self.current_color, self.color_type)
+-#
+-#     def emit_color(self):
+-#         """Отправляет текущий цвет через event_bus"""
+-#         if not hasattr(self.master, 'sliders'):
+-#             return
+-#
+-#         if self.master.color_type == "RGB":
+-#             r = round((self.master.sliders["r"].pointer_pos))
+-#             g = round(self.master.sliders["g"].pointer_pos)
+-#             b = round(self.master.sliders["b"].pointer_pos)
+-#             print(r, g, b)
+-#             hex_color = rgb2hex((r, g, b))
+-#         else:  # HSV
+-#             h = self.master.sliders["h"].pointer_pos / 255 * 360
+-#             s = self.master.sliders["s"].pointer_pos / 255
+-#             v = self.master.sliders["v"].pointer_pos / 255
+-#             r, g, b = [int(c * 255) for c in colorsys.hsv_to_rgb(h / 360, s, v)]
+-#             hex_color = rgb2hex((r, g, b))
+-#
+-#         self.event_bus.send_state("color_modify", hex_color.upper())
+-#
+-#
+-# class PalletSlidersFrame(BaseWidget, ctk.CTkFrame):
+-#     subscriptions = {"color_changed": "on_color_changed"}
+-#
+-#     def __init__(self, master, _event_bus, _is_last=False, **kwargs):
+-#         ctk.CTkFrame.__init__(self, master=master, **kwargs)
+-#         BaseWidget.__init__(self, _event_bus=_event_bus)
+-#
+-#         self.color_type = "RGB"  # По умолчанию RGB
+-#         self.sliders = {}
+-#         self.current_color = "#000000"
+-#
+-#         # Создаем слайдеры для RGB по умолчанию
+-#         self.refresh_sliders()
+-#         self.columnconfigure(0, weight=1)
+-#         self.configure(fg_color="transparent")
+-#
+-#         if _is_last:
+-#             self.init_subscribes()
+-#
+-#     def build_view(self):
+-#         slider_width = self.additional_styles.get("slider_width", 100)
+-#         slider_height = self.additional_styles.get("slider_height", 20)
+-#
+-#
+-#
+-#     def set_color_type(self, color_type):
+-#         """Переключает между RGB и HSV режимами"""
+-#         if color_type.upper() in ("RGB", "HSV") and self.color_type != color_type:
+-#             self.color_type = color_type.upper()
+-#             self.refresh_sliders()
+-#
+-#     def refresh_sliders(self):
+-#         """Обновляет слайдеры в соответствии с текущим цветовым пространством"""
+-#         self.clear_sliders()
+-#
+-#         channels = "rgb" if self.color_type == "RGB" else "hsv"
+-#         rgb_color = hex2rgb(self.current_color)
+-#
+-#         for i, ch in enumerate(channels):
+-#             slider = ColorSlider(self, self.event_bus, channel=ch, _is_last=True)
+-#             slider.grid(row=i, column=0, padx=5, pady=2, sticky="")
+-#             slider.update_slider(rgb_color, self.color_type)
+-#             slider.set_position_from_color(rgb_color, self.color_type)
+-#             self.sliders[ch] = slider
+-#
+-#     def clear_sliders(self):
+-#         """Удаляет все текущие слайдеры"""
+-#         for slider in self.sliders.values():
+-#             slider.destroy()
+-#         self.sliders = {}
+-#
+-#     def on_color_changed(self, color: str):
+-#         """Обработчик изменения цвета"""
+-#         if color.startswith("#"):
+-#             self.current_color = color
+-#             rgb_color = hex2rgb(color)
+-#             for slider in self.sliders.values():
+-#                 slider.update_slider(rgb_color, self.color_type)
+-#                 slider.set_position_from_color(rgb_color, self.color_type)
+-
+-
+-
+ class ColorSlider(BaseWidget, ctk.CTkCanvas):
+ 
+     binds = {"<Button-1>": "on_click", "<B1-Motion>": "on_drag", "<Configure>": "on_resize"}
+@@ -243,9 +29,11 @@
+     def build_view(self):
+         self.width = self.additional_styles.get("width", 100)
+         self.height = self.additional_styles.get("height", 20)
++        self.border_width = self.additional_styles.get("border_width", 0)
++        self.border_color = self.additional_styles.get("border_color", "#ffffff")
+         self.configure(width=self.width, height=self.height)
+         self.grid_propagate(False)
+-        self.configure(borderwidth=0, highlightthickness=3, highlightcolor=self.master.cget("bg_color")[0])
++        self.configure(borderwidth=0, highlightthickness=self.border_width, highlightbackground=self.border_color)
+ 
+     def on_resize(self, event):
+         if hasattr(self, 'current_color') and hasattr(self, 'color_type'):
+@@ -255,7 +43,6 @@
+         base_width = 10
+         height = self.winfo_height() or 20
+ 
+-        # Создаем базовое изображение градиента
+         base_img = Image.new("RGB", (base_width, 1))
+         pixels = base_img.load()
+ 
+@@ -270,7 +57,7 @@
+                 else:  # 'b'
+                     px_color = (r, g, value)
+                 pixels[x, 0] = px_color
+-        else:  # HSV
++        else:
+             h, s, v = colorsys.rgb_to_hsv(*[c / 255 for c in base_color])
+             for x in range(base_width):
+                 value = x / (base_width - 1)
+@@ -291,13 +78,9 @@
+         self.current_color = color
+         self.color_type = color_type
+ 
+-        # Получаем растянутое градиентное изображение
+         gradient_img = self.build_gradient(color, color_type)
+         width, height = gradient_img.size
+ 
+-        # Создаем изображение с указателем (в режиме RGBA)
+-        # pointer_img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+-
+         pointer_img = Image.new("RGBA", (self.pointer_radius*2, self.pointer_radius*2), (0, 0, 0, 0))
+ 
+         circle = draw_ellipse(pointer_img,
+@@ -306,10 +89,7 @@
+                               fillcolor=self.current_color, outlinecolor="#ffffffff")
+         self.pointer_img = ImageTk.PhotoImage(image=circle)
+ 
+-        # Рассчитываем позицию указателя с учетом границ
+         pointer_pos = int(self.pointer_pos / 255 * (width - 1))
+-
+-        # Ограничиваем позицию, чтобы указатель не выходил за границы
+         pointer_pos = max(self.pointer_radius, min(pointer_pos, width - 1 - self.pointer_radius))
+ 
+         bounds = (
+@@ -405,7 +185,7 @@
+ 
+         for i, ch in enumerate(channels):
+             slider = ColorSlider(self, self.event_bus, channel=ch, _is_last=True)
+-            slider.grid(row=i, column=0, padx=5, pady=2, sticky="ew")
++            slider.grid(row=i, column=0, padx=0, pady=5, sticky="")
+             slider.update_slider(rgb_color, self.color_type)
+             slider.set_position_from_color(rgb_color, self.color_type)
+             self.sliders[ch] = slider
+Index: main.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from core.app import App\r\n\r\nif __name__ == \"__main__\":\r\n    app = App()\r\n    app.mainloop()\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/main.py b/main.py
+--- a/main.py	(revision f3f6907b86634f6391c8cc3d223539b4fbae74ea)
++++ b/main.py	(date 1744948557929)
+@@ -1,5 +1,7 @@
+-from core.app import App
++from core.app_test import App
+ 
+ if __name__ == "__main__":
+     app = App()
++    # app.overrideredirect(True)
++    # app.wm_attributes('-alpha', 0.5)  # Прозрачность (0.0-1.0)
+     app.mainloop()
+Index: widgets/pallet_radio_button.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from widgets.custom_radio_button import CustomRadioButton\r\n\r\n\r\nclass PalletRadioButton(CustomRadioButton):\r\n\r\n    def __init__(self, master, _event_bus, _color, _variable, _value, _is_last=False, **kwargs):\r\n        CustomRadioButton.__init__(self, master=master, _event_bus=_event_bus, _variable=_variable, _value=_value, **kwargs)\r\n        self.color = _color\r\n        self.styles_on[\"color\"] = self.color\r\n        self.styles_off[\"color\"] = self.color\r\n        self.image_on = self.build_view(self.styles_on)\r\n        self.image_off = self.build_view(self.styles_off)\r\n        self.update_button()\r\n\r\n        if _is_last:\r\n            self.init_subscribes()\r\n\r\n    def on_activate(self, **kwargs):\r\n        self.event_bus.send_state(\"color_modify\", self.color)\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/widgets/pallet_radio_button.py b/widgets/pallet_radio_button.py
+--- a/widgets/pallet_radio_button.py	(revision f3f6907b86634f6391c8cc3d223539b4fbae74ea)
++++ b/widgets/pallet_radio_button.py	(date 1744967152040)
+@@ -3,6 +3,8 @@
+ 
+ class PalletRadioButton(CustomRadioButton):
+ 
++    binds = {**CustomRadioButton.binds, "<ButtonRelease-3>": "on_right_button"}
++
+     def __init__(self, master, _event_bus, _color, _variable, _value, _is_last=False, **kwargs):
+         CustomRadioButton.__init__(self, master=master, _event_bus=_event_bus, _variable=_variable, _value=_value, **kwargs)
+         self.color = _color
+@@ -17,3 +19,6 @@
+ 
+     def on_activate(self, **kwargs):
+         self.event_bus.send_state("color_modify", self.color)
++
++    def on_right_button(self, event=None):
++        self.event_bus.send_state("color_deleted", self.color)
+Index: widgets/custom_radio_button_frame.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import customtkinter as ctk\r\nfrom widgets.base import BaseWidget\r\nfrom widgets.custom_radio_button import CustomRadioButton\r\n\r\nimport ctypes\r\nscaleFactor = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100\r\n\r\n\r\nclass CustomRadioButtonFrame(BaseWidget, ctk.CTkScrollableFrame):\r\n\r\n    binds = {**BaseWidget.binds, '<Configure>': 'update_frame'}\r\n\r\n    def __init__(self, master, _event_bus, _is_last=False, **kwargs):\r\n        ctk.CTkScrollableFrame.__init__(self, master=master, **kwargs)\r\n        BaseWidget.__init__(self, _event_bus=_event_bus)\r\n\r\n        self.root = master\r\n        self.buttons = {}\r\n        self.variable = ctk.StringVar(value=\"\")\r\n        self.rows = None\r\n        self.columns = None\r\n\r\n        self.object_full_size = None\r\n        self.object_padx, self.object_pady = None, None\r\n\r\n        self.is_scrollable = True\r\n        self._scrollbar.grid()\r\n\r\n        if _is_last:\r\n            self.init_subscribes()\r\n\r\n    # -----------------------------------logic----------------------------------------------\r\n    def add(self, **kwargs):\r\n        pass\r\n\r\n    def remove(self, _key):\r\n        if _key in self.buttons:\r\n            del self.buttons[_key]\r\n\r\n    # -----------------------------------render----------------------------------------------\r\n    def init_object_full_size(self, _object: CustomRadioButton):\r\n        if not (self.object_padx and self.object_pady):\r\n            self.object_padx = tuple(self.additional_styles.get(\"padx\", (1, 1)))\r\n            self.object_pady = tuple(self.additional_styles.get(\"pady\", (1, 1)))\r\n        size = int(_object.size * scaleFactor)\r\n        self.object_full_size = (self.object_padx[0] + size + self.object_padx[1], self.object_pady[0] + size + self.object_pady[1])\r\n\r\n    def calc_columns(self):\r\n        self.update()\r\n        width = self.winfo_width() if self.winfo_width() > 1 else int(self.cget(\"width\"))\r\n        return max(1, width // self.object_full_size[0])\r\n\r\n    def calc_rows(self):\r\n        count = len(self.buttons)\r\n        return (count + self.columns - 1) // self.columns\r\n\r\n    def update_frame(self, event=None):\r\n        if not self.object_full_size:\r\n            return\r\n        new_columns = self.calc_columns()\r\n        new_rows = self.calc_rows()\r\n\r\n        if new_columns != self.columns or new_rows != self.rows:\r\n            if new_columns != self.columns:\r\n                self.columns = new_columns\r\n                self.grid_columnconfigure(list(range(self.columns)), weight=0)\r\n\r\n            for i, key in enumerate(self.buttons):\r\n                self.buttons[key].grid(row=i // self.columns, column=i % self.columns, padx=self.object_padx, pady=self.object_pady, sticky=\"nw\")\r\n\r\n            if new_rows != self.rows:\r\n                self.rows = new_rows\r\n\r\n        self.update_scrollbar()\r\n\r\n    def update_scrollbar(self):\r\n        rows = self.calc_rows()\r\n        total_height = rows * self.object_full_size[1]\r\n        info = self.grid_info()\r\n        row, rowspan, column, columnspan = info[\"row\"], info[\"rowspan\"], info[\"column\"], info[\"columnspan\"]\r\n        bbox = self.root.grid_bbox(column, row, column + columnspan - 1, row + rowspan - 1)\r\n        visible_height = bbox[3]\r\n\r\n        if total_height > visible_height and not self.is_scrollable:\r\n            self._scrollbar.grid()\r\n            self.is_scrollable = True\r\n        elif total_height <= visible_height and self.is_scrollable:\r\n            self.is_scrollable = False\r\n            self._scrollbar.grid_remove()\r\n\r\n\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/widgets/custom_radio_button_frame.py b/widgets/custom_radio_button_frame.py
+--- a/widgets/custom_radio_button_frame.py	(revision f3f6907b86634f6391c8cc3d223539b4fbae74ea)
++++ b/widgets/custom_radio_button_frame.py	(date 1744966675655)
+@@ -35,9 +35,12 @@
+ 
+     def remove(self, _key):
+         if _key in self.buttons:
++            self.buttons[_key].destroy()
+             del self.buttons[_key]
++            self.update_frame()
++
+ 
+-    # -----------------------------------render----------------------------------------------
++            # -----------------------------------render----------------------------------------------
+     def init_object_full_size(self, _object: CustomRadioButton):
+         if not (self.object_padx and self.object_pady):
+             self.object_padx = tuple(self.additional_styles.get("padx", (1, 1)))
+Index: widgets/image_renderer.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import customtkinter as ctk\r\nfrom widgets.base import BaseWidget\r\nfrom widgets.auto_scroll_bar import AutoScrollbar\r\nfrom PIL import Image, ImageDraw, ImageTk\r\nimport math\r\n\r\n\r\nclass ImageRenderer(BaseWidget, ctk.CTkFrame):\r\n\r\n    subscriptions = {\"file_opened\": \"set_image\"}\r\n    binds = {**BaseWidget.binds}\r\n\r\n    def __init__(self, master, _event_bus, _zoom_delta=5, _is_last=False, fixed_size=None, **kwargs):\r\n        self.fixed_width = kwargs.pop(\"width\", 0)\r\n        self.fixed_height = kwargs.pop(\"height\", 0)\r\n\r\n        ctk.CTkFrame.__init__(self, master=master, width=self.fixed_width, height=self.fixed_height, **kwargs)\r\n        BaseWidget.__init__(self, _event_bus=_event_bus)\r\n\r\n        if self.fixed_width and self.fixed_height:\r\n            self.grid_propagate(False)\r\n\r\n        # Vertical and horizontal scrollbars for canvas\r\n        vbar = AutoScrollbar(self, self.event_bus, orientation='vertical', border_spacing=0, width=8)\r\n        hbar = AutoScrollbar(self,  self.event_bus, orientation='horizontal', border_spacing=0, height=8)\r\n        vbar.grid(row=0, column=1, padx=(0, 0), pady=(0, 0), sticky='nsw')\r\n        hbar.grid(row=1, column=0, padx=(0, 0), pady=(0, 0), sticky='wen')\r\n\r\n        self.outline = ctk.CTkFrame(self)\r\n        self.outline.grid(row=0, column=0, padx=(0, 0), pady=(0, 0), sticky=\"nsew\")\r\n        self.outline.rowconfigure(0, weight=1)\r\n        self.outline.columnconfigure(0, weight=1)\r\n\r\n        self.canvas_container = ctk.CTkFrame(self.outline)\r\n        self.canvas_container.grid(row=0, column=0, padx=(0, 0), pady=(0, 0), sticky=\"nsew\")\r\n        self.canvas_container.rowconfigure(0, weight=1)\r\n        self.canvas_container.columnconfigure(0, weight=1)\r\n\r\n        # Init canvas\r\n        self.canvas = ctk.CTkCanvas(self.canvas_container, highlightthickness=0, xscrollcommand=hbar.set, yscrollcommand=vbar.set)\r\n        self.canvas.grid(row=0, column=0, sticky='nswe')\r\n        self.canvas.update()  # wait until canvas is created\r\n\r\n        # Move canvas in pixels\r\n        self.canvas.configure(xscrollincrement=1, yscrollincrement=1)\r\n        self.canvas.configure(confine=False)\r\n\r\n        # Bind scrollbars to the canvas\r\n        vbar.configure(command=self.scroll_y)\r\n        hbar.configure(command=self.scroll_x)\r\n\r\n        # Make the canvas expandable\r\n        self.rowconfigure(0, weight=1)\r\n        self.columnconfigure(0, weight=1)\r\n\r\n        # Bind events to the !Canvas!\r\n        self.canvas.bind('<MouseWheel>', self.on_wheel)\r\n        self.canvas.bind('<Enter>', self.on_enter)\r\n\r\n        # Init start fields\r\n        self.base_img = None\r\n        self.img = None  # img to render\r\n        self.draw = None\r\n        self.base_width, self.base_height = None, None\r\n        self.scaled_width, self.scaled_height = None, None\r\n        self.tile = None\r\n        self.scale = 1  # scale is 100%\r\n        self.delta = _zoom_delta  # zoom magnitude\r\n        self.offset = (0, 0)\r\n        self.is_decreased = False  # is decreased\r\n        self.interpolation = Image.Resampling.NEAREST  # interpolation method\r\n        self.frame_move = (0, 0)\r\n        self.cached_imagetk = None\r\n        self.cached_imagetk_scale = None\r\n\r\n        self.build_view()\r\n\r\n        if _is_last:\r\n            self.init_subscribes()\r\n\r\n    def build_view(self):\r\n        canvas_bg = self.additional_styles.get(\"canvas_bg\", \"#828282\")\r\n\r\n        out_border_width = self.additional_styles.get(\"out_border_width\", 0)\r\n        mid_border_width = self.additional_styles.get(\"mid_border_width\", 0)\r\n        inner_border_width = self.additional_styles.get(\"inner_border_width\", 0)\r\n\r\n        out_border_color = self.additional_styles.get(\"out_border_color\", \"#000000\")\r\n        mid_border_color = self.additional_styles.get(\"mid_border_color\", \"#000000\")\r\n        inner_border_color = self.additional_styles.get(\"inner_border_color\", \"#000000\")\r\n\r\n        self.outline.configure(fg_color=out_border_color)\r\n        self.canvas_container.configure(fg_color=mid_border_color)\r\n        self.canvas_container.grid_configure(padx=out_border_width, pady=out_border_width)\r\n        self.canvas.configure(highlightthickness=inner_border_width, highlightbackground=inner_border_color)\r\n        self.canvas.grid_configure(padx=mid_border_width, pady=mid_border_width)\r\n        self.canvas.configure(bg=canvas_bg)\r\n\r\n\r\n    # Send current use zone\r\n    def on_enter(self, event=None):\r\n        self.event_bus.send_state('use_zone_changed', self)\r\n\r\n    # Set an _img to ImageCanvas\r\n    def set_image(self, _img: Image):\r\n        try:\r\n            if _img is not None:\r\n                self.base_img = _img\r\n                self.img = self.base_img.convert('RGBA')\r\n                self.draw = ImageDraw.Draw(self.img)\r\n                self.base_width, self.base_height = self.img.size\r\n                self.scaled_width, self.scaled_height = round(self.scale * self.base_width - 1), round(self.scale * self.base_height - 1)\r\n                self.cached_imagetk = None\r\n                self.cached_imagetk_scale = None\r\n\r\n                self.tile = (self.base_width, self.base_height)\r\n                imagetk = ImageTk.PhotoImage(self.img)\r\n                imageid = self.canvas.create_image((0, 0), anchor='nw', image=imagetk, tag=\"img\")\r\n                self.canvas.tag_lower(imageid)\r\n                self.canvas.imagetk = imagetk\r\n\r\n                canvas_box = (self.canvas.canvasx(0),\r\n                              self.canvas.canvasy(0),\r\n                              self.canvas.canvasx(self.canvas.winfo_width()),\r\n                              self.canvas.canvasy(self.canvas.winfo_height()))\r\n\r\n                canvas_center = (canvas_box[0] + canvas_box[2]) / 2, (canvas_box[1] + canvas_box[3]) / 2\r\n\r\n                self.maximize_image()\r\n\r\n                image_center = self.scaled_width / 2, self.scaled_height / 2\r\n                center_vec = int(canvas_center[0] - image_center[0]), int(canvas_center[1] - image_center[1])\r\n\r\n                self.canvas.xview_scroll(-center_vec[0], ctk.UNITS)\r\n                self.canvas.yview_scroll(-center_vec[1], ctk.UNITS)\r\n\r\n                # red square at 0 0\r\n                start = Image.new('RGB', (10, 10), (255, 0, 0))\r\n                imagetk1 = ImageTk.PhotoImage(start)\r\n                imageid1 = self.canvas.create_image((0, 0), anchor='nw', image=imagetk1, tag=\"img1\")\r\n                self.canvas.tag_raise(imageid1)\r\n                self.canvas.imagetk1 = imagetk1\r\n\r\n                self.canvas.update()\r\n        except Exception as ex:\r\n            print(ex)\r\n\r\n    def maximize_image(self):\r\n        canvas_width = self.canvas.winfo_width()\r\n        canvas_height = self.canvas.winfo_height()\r\n\r\n        highlight = int(self.canvas.cget(\"highlightthickness\"))\r\n        canvas_width -= 2 * highlight\r\n        canvas_height -= 2 * highlight\r\n\r\n        width_scale = canvas_width / self.base_width\r\n        height_scale = canvas_height / self.base_height\r\n\r\n        scale = min(width_scale, height_scale)\r\n\r\n        scale = min(scale, 1.0)\r\n\r\n        self.set_scale(scale)\r\n\r\n    def set_scale(self, _scale):\r\n        self.scale = _scale\r\n        self.scaled_width, self.scaled_height = round(self.scale * self.base_width), round(self.scale * self.base_height)\r\n        self.render()\r\n\r\n    def scroll_y(self, *args, **kwargs):\r\n        self.canvas.yview(*args, **kwargs)\r\n        self.render()\r\n\r\n    def scroll_x(self, *args, **kwargs):\r\n        self.canvas.xview(*args, **kwargs)\r\n        self.render()\r\n\r\n    def on_wheel(self, event):\r\n        if self.base_img is None:\r\n            return\r\n        highlight = int(self.canvas.cget(\"highlightthickness\"))\r\n        canvas_x = self.canvas.canvasx(event.x) - highlight\r\n        canvas_y = self.canvas.canvasy(event.y) - highlight\r\n\r\n\r\n        image_x = canvas_x / self.scale\r\n        image_y = canvas_y / self.scale\r\n\r\n        if event.delta == -120:  # отдаление\r\n            if self.scale - self.delta >= 1:\r\n                self.scale -= self.delta\r\n            elif (self.base_width * self.scale / 2 > 30) and (self.base_height * self.scale / 2 > 30):\r\n                self.scale /= 2\r\n        elif event.delta == 120:  # приближение\r\n            if self.scale >= 1:\r\n                self.scale += self.delta\r\n            else:\r\n                self.scale *= 2\r\n\r\n        self.scaled_width = round(self.base_width * self.scale)\r\n        self.scaled_height = round(self.base_height * self.scale)\r\n\r\n        new_canvas_x = image_x * self.scale\r\n        new_canvas_y = image_y * self.scale\r\n\r\n        dx = new_canvas_x - canvas_x\r\n        dy = new_canvas_y - canvas_y\r\n\r\n        self.canvas.configure(scrollregion=(0, 0, self.scaled_width, self.scaled_height))\r\n\r\n        self.canvas.xview_moveto((self.canvas.canvasx(0) + highlight  + dx) / self.scaled_width)\r\n        self.canvas.yview_moveto((self.canvas.canvasy(0) + highlight + dy) / self.scaled_height)\r\n\r\n        if self.scale >= 1:\r\n            self.interpolation = Image.Resampling.NEAREST\r\n        else:\r\n            self.interpolation = Image.Resampling.LANCZOS\r\n\r\n        self.render()\r\n\r\n    def render(self, event=None):\r\n        if self.base_img is None:\r\n            return\r\n\r\n        #     # Проверка, изменилась ли область или масштаб\r\n        # full_fit = self.scaled_width <= self.canvas.winfo_width() and self.scaled_height <= self.canvas.winfo_height()\r\n        # if full_fit and hasattr(self, \"cached_imagetk\") and self.cached_imagetk_scale == self.scale:\r\n        #     # Просто перемещаем изображение, если оно полностью влезает\r\n        #     self.canvas.delete(\"img\")\r\n        #     self.canvas.create_image(0, 0, anchor='nw', image=self.cached_imagetk, tag=\"img\")\r\n        #     return\r\n\r\n\r\n        img_box = (0, 0, self.scaled_width, self.scaled_height)\r\n\r\n        canvas_box = (\r\n            self.canvas.canvasx(0),\r\n            self.canvas.canvasy(0),\r\n            self.canvas.canvasx(self.canvas.winfo_width() + 1),\r\n            self.canvas.canvasy(self.canvas.winfo_height() + 1)\r\n        )\r\n\r\n        x1 = max(math.floor(canvas_box[0]), 0)\r\n        y1 = max(math.floor(canvas_box[1]), 0)\r\n        x2 = min(math.ceil(canvas_box[2]), img_box[2])\r\n        y2 = min(math.ceil(canvas_box[3]), img_box[3])\r\n\r\n        if (x2 - x1) >= 1 and (y2 - y1) >= 1:\r\n            x1_base = max(int(x1 / self.scale), 0)\r\n            y1_base = max(int(y1 / self.scale), 0)\r\n            x2_base = min(math.ceil(x2 / self.scale), self.base_width)\r\n            y2_base = min(math.ceil(y2 / self.scale), self.base_height)\r\n\r\n            base_img_segment = self.img.crop((x1_base, y1_base, x2_base, y2_base))\r\n            img_segment = base_img_segment.resize(\r\n                (int((x2_base - x1_base) * self.scale),\r\n                 int((y2_base - y1_base) * self.scale)),\r\n                self.interpolation\r\n            )\r\n\r\n            offset_x = x1 % self.scale\r\n            offset_y = y1 % self.scale\r\n            result_img = img_segment.crop((offset_x, offset_y, offset_x + (x2 - x1), offset_y + (y2 - y1)))\r\n\r\n            imagetk = ImageTk.PhotoImage(result_img)\r\n            self.canvas.delete(\"img\")\r\n            self.canvas.create_image(x1, y1, anchor='nw', image=imagetk, tag=\"img\")\r\n            self.canvas.imagetk = imagetk\r\n\r\n            # # Сохраняем кэш, если вся картинка видна и отрисована\r\n            # if full_fit and x1 == 0 and y1 == 0 and (x2 - x1) == self.scaled_width and (y2 - y1) == self.scaled_height:\r\n            #     self.cached_imagetk = imagetk\r\n            #     self.cached_imagetk_scale = self.scale\r\n\r\n        self.canvas.configure(scrollregion=(0, 0, self.scaled_width, self.scaled_height))
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/widgets/image_renderer.py b/widgets/image_renderer.py
+--- a/widgets/image_renderer.py	(revision f3f6907b86634f6391c8cc3d223539b4fbae74ea)
++++ b/widgets/image_renderer.py	(date 1744962218738)
+@@ -58,6 +58,8 @@
+         self.canvas.bind('<Enter>', self.on_enter)
+ 
+         # Init start fields
++
++        self.original_img = None
+         self.base_img = None
+         self.img = None  # img to render
+         self.draw = None
+@@ -105,6 +107,7 @@
+     def set_image(self, _img: Image):
+         try:
+             if _img is not None:
++                self.original_img = _img
+                 self.base_img = _img
+                 self.img = self.base_img.convert('RGBA')
+                 self.draw = ImageDraw.Draw(self.img)
+@@ -272,4 +275,5 @@
+             #     self.cached_imagetk = imagetk
+             #     self.cached_imagetk_scale = self.scale
+ 
+-        self.canvas.configure(scrollregion=(0, 0, self.scaled_width, self.scaled_height))
+\ No newline at end of file
++        self.canvas.configure(scrollregion=(0, 0, self.scaled_width, self.scaled_height))
++        self.event_bus.send_state("canvas_rendered", self)
+\ No newline at end of file
+Index: widgets/pallet_display_frame.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from widgets.base import BaseWidget\r\nimport customtkinter as ctk\r\nfrom utils.color_models import hex2rgb\r\nimport re\r\n\r\n\r\nclass HexEntry(BaseWidget, ctk.CTkEntry):\r\n\r\n    subscriptions = {\"focus_changed\": \"on_focus_changed\"}\r\n    binds = {\"<Control-v>\": \"handle_paste\", \"<KeyRelease>\": \"format_input\"}\r\n    def __init__(self, master, _event_bus, _is_last=False, **kwargs):\r\n        ctk.CTkEntry.__init__(self, master=master, **kwargs)\r\n        BaseWidget.__init__(self, _event_bus=_event_bus)\r\n\r\n        self.configure(validate=\"key\", validatecommand=(self.register(self.validate_input), \"%P\"))\r\n\r\n        self.is_focused = False\r\n\r\n        if _is_last:\r\n            self.init_subscribes()\r\n\r\n\r\n    def on_focus_changed(self, _focus_object):\r\n\r\n        def is_child_of(widget, parent):\r\n            while widget is not None:\r\n                if widget == parent:\r\n                    return True\r\n                widget = getattr(widget, \"master\", None)\r\n            return False\r\n\r\n        if is_child_of(_focus_object, self):\r\n            if not self.is_focused:\r\n                self.unlock_entry()\r\n        else:\r\n            if self.is_focused:\r\n                self.lock_entry()\r\n\r\n    def validate_input(self, new_text: str) -> bool:\r\n        if not self.is_focused and self.master.focus_get() != self:\r\n            return True\r\n        return len(new_text) <= 6 and re.fullmatch(r\"^[0-9A-Fa-f]*$\", new_text) is not None\r\n\r\n    def lock_entry(self):\r\n        self.is_focused = False\r\n        self.master.focus_set()  # Просто уводим фокус\r\n\r\n\r\n    def unlock_entry(self):\r\n        if not self.is_focused:\r\n            self.is_focused = True\r\n            self.configure(state=\"normal\")  # Возвращаем нормальный режим\r\n            self.focus_set()  # Устанавливаем фокус\r\n            self.icursor(\"end\")  # Курсор в конец текста\r\n\r\n    def handle_paste(self, event):\r\n        if self.is_focused:\r\n            clipboard_text = self.master.clipboard_get()\r\n            filtered_text = re.sub(r\"[^0-9A-Fa-f]\", \"\", clipboard_text)[:6]\r\n            self.delete(0, \"end\")\r\n            self.insert(0, filtered_text.upper())\r\n        return \"break\"\r\n\r\n    def format_input(self, event):\r\n        if self.is_focused:\r\n            current_text = self.get()\r\n            if current_text != current_text.upper():\r\n                self.delete(0, \"end\")\r\n                self.insert(0, current_text.upper())\r\n\r\n    def get_hex(self) -> str:\r\n        text = self.get().strip()\r\n        return text.upper() if len(text) == 6 else \"\"\r\n\r\nclass PalletDisplayFrame(BaseWidget, ctk.CTkFrame):\r\n    subscriptions = {\"color_changed\": \"update_color\"}\r\n\r\n    def __init__(self, master, _event_bus, _is_last=False, **kwargs):\r\n        ctk.CTkFrame.__init__(self, master=master, **kwargs)\r\n        BaseWidget.__init__(self, _event_bus=_event_bus)\r\n\r\n        self.color = None\r\n        self.rowconfigure(0, weight=1)\r\n        self.columnconfigure(0, weight=1)\r\n\r\n        self.container = ctk.CTkFrame(self, fg_color=\"transparent\")\r\n        self.container.grid(row=0, column=0, sticky=\"\", padx=(10, 10), pady=(10, 10))\r\n\r\n        self.container.grid_columnconfigure(0, weight=0)  # #\r\n        self.container.grid_columnconfigure(1, weight=0)  # entry\r\n        self.container.grid_rowconfigure(0, weight=1)\r\n\r\n        self.hash_label = ctk.CTkLabel(self.container, text=\"#\")\r\n        self.hash_label.grid(row=0, column=0, padx=(0, 5), sticky=\"e\")\r\n\r\n        self.entry = HexEntry(self.container, self.event_bus, _is_last=True, width=70, fg_color=\"transparent\")\r\n        self.entry.grid(row=0, column=1, sticky=\"w\")\r\n\r\n        self.entry.bind(\"<Return>\", self.on_enter)\r\n        self.entry.bind(\"<KeyRelease>\", self.on_enter, add=\"+\")\r\n\r\n        self.build_view()\r\n\r\n        if _is_last:\r\n            self.init_subscribes()\r\n\r\n    def build_view(self):\r\n        width = self.additional_styles.get(\"width\", 65)\r\n        hash_indent = self.additional_styles.get(\"hash_indent\", 5)\r\n\r\n        selection_color = self.additional_styles.get(\"selection_color\", \"#C36743\")\r\n        selection_text_color = self.additional_styles.get(\"selection_text_color\", \"#FFFFFF\")\r\n\r\n        entry_border_width = self.additional_styles.get(\"entry_border_width\", 0)\r\n        container_border_width = self.additional_styles.get(\"container_border_width\", 0)\r\n        entry_padx = self.additional_styles.get(\"entry_padx\", (0, 0))\r\n        entry_pady = self.additional_styles.get(\"entry_pady\", (0, 0))\r\n        container_padx = self.additional_styles.get(\"container_padx\", (0, 0))\r\n        container_pady = self.additional_styles.get(\"container_pady\", (0, 0))\r\n\r\n\r\n        self.entry.configure(width=width,border_width=entry_border_width)\r\n        self.container.configure(border_width=container_border_width)\r\n        self.entry._entry.configure(selectbackground=selection_color, selectforeground=selection_text_color)\r\n\r\n        self.hash_label.grid_configure(padx=(entry_padx[0], hash_indent), pady=entry_pady)\r\n        self.entry.grid_configure(padx=(0, entry_padx[1]), pady=entry_pady)\r\n        self.container.grid_configure(padx=container_padx, pady=container_pady)\r\n\r\n\r\n    def update_color(self, _color):\r\n        if not _color:\r\n            return\r\n        hex_val = _color.lstrip(\"#\").upper()\r\n        self.entry.delete(0, \"end\")\r\n        self.entry.insert(0, hex_val)\r\n        self.set_color(f\"#{hex_val}\")\r\n\r\n    def on_enter(self, event=None):\r\n        color = self.entry.get_hex()\r\n        if color:\r\n            self.event_bus.send_state(\"color_modify\", f'#{color}')\r\n\r\n    def _is_valid_hex(self, s):\r\n        return re.fullmatch(r\"[0-9a-fA-F]{6}\", s) is not None\r\n\r\n    def set_color(self, _color):\r\n        if _color:\r\n            self.color = _color\r\n            self.configure(fg_color=self.color)\r\n            text_color = self.calc_text_color(self.color)\r\n            self.hash_label.configure(text_color=text_color)\r\n            self.entry.configure(text_color=text_color, border_color=text_color)\r\n            self.container.configure(border_color=text_color)\r\n\r\n    def calc_text_color(self, color):\r\n        rgb = hex2rgb(color)\r\n        L = round(rgb[0] * 299 / 1000 + rgb[1] * 587 / 1000 + rgb[2] * 114 / 1000)\r\n        return \"#000000\" if L > 128 else \"#FFFFFF\"
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/widgets/pallet_display_frame.py b/widgets/pallet_display_frame.py
+--- a/widgets/pallet_display_frame.py	(revision f3f6907b86634f6391c8cc3d223539b4fbae74ea)
++++ b/widgets/pallet_display_frame.py	(date 1744940272562)
+@@ -1,6 +1,8 @@
+ from widgets.base import BaseWidget
+ import customtkinter as ctk
+ from utils.color_models import hex2rgb
++from utils.algs import is_child_of
++
+ import re
+ 
+ 
+@@ -22,13 +24,6 @@
+ 
+     def on_focus_changed(self, _focus_object):
+ 
+-        def is_child_of(widget, parent):
+-            while widget is not None:
+-                if widget == parent:
+-                    return True
+-                widget = getattr(widget, "master", None)
+-            return False
+-
+         if is_child_of(_focus_object, self):
+             if not self.is_focused:
+                 self.unlock_entry()
+Index: themes/dark.json
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>{\r\n   \"_colors\": {\r\n    \"_main\": \"#3b3531\",\r\n    \"_secondary\": \"#6c655e\",\r\n    \"_accent\": \"#cecaba\",\r\n    \"_complementary\": \"#374448\",\r\n    \"_light_text\": \"#fff3ee\",\r\n    \"_dark_text\": \"#0d0400\"\r\n  },\r\n\r\n  \"CTk\": {\r\n    \"fg_color\": [\"_main\", \"_main\"]\r\n  },\r\n  \"CTkToplevel\": {\r\n    \"fg_color\": [\"_main\", \"_main\"]\r\n  },\r\n  \"CTkFrame\": {\r\n    \"corner_radius\": 0,\r\n    \"border_width\": 0,\r\n    \"fg_color\": [\"_main\", \"_main\"],\r\n    \"bg_color\": [\"_main\", \"_main\"],\r\n    \"top_fg_color\": [\"_main\", \"_main\"],\r\n    \"border_color\": [\"_main\", \"_main\"]\r\n  },\r\n  \"CTkButton\": {\r\n    \"corner_radius\": 6,\r\n    \"border_width\": 0,\r\n    \"fg_color\": [\"#000000\", \"#1f538d\"],\r\n    \"hover_color\": [\"#325882\", \"#14375e\"],\r\n    \"border_color\": [\"#3E454A\", \"#949A9F\"],\r\n    \"text_color\": [\"#DCE4EE\", \"#DCE4EE\"],\r\n    \"text_color_disabled\": [\"gray74\", \"gray60\"]\r\n  },\r\n  \"CTkLabel\": {\r\n    \"corner_radius\": 0,\r\n    \"fg_color\": \"transparent\",\r\n    \"text_color\": [\"gray14\", \"gray84\"]\r\n  },\r\n  \"CTkEntry\": {\r\n    \"corner_radius\": 6,\r\n    \"border_width\": 2,\r\n    \"fg_color\": [\"#F9F9FA\", \"#343638\"],\r\n    \"border_color\": [\"#979DA2\", \"#565B5E\"],\r\n    \"text_color\": [\"gray14\", \"gray84\"],\r\n    \"placeholder_text_color\": [\"gray52\", \"gray62\"]\r\n  },\r\n  \"CTkCheckBox\": {\r\n    \"corner_radius\": 6,\r\n    \"border_width\": 3,\r\n    \"fg_color\": [\"#3a7ebf\", \"#1f538d\"],\r\n    \"border_color\": [\"#3E454A\", \"#949A9F\"],\r\n    \"hover_color\": [\"#325882\", \"#14375e\"],\r\n    \"checkmark_color\": [\"#DCE4EE\", \"gray90\"],\r\n    \"text_color\": [\"gray14\", \"gray84\"],\r\n    \"text_color_disabled\": [\"gray60\", \"gray45\"]\r\n  },\r\n  \"CTkSwitch\": {\r\n    \"corner_radius\": 1000,\r\n    \"border_width\": 3,\r\n    \"button_length\": 0,\r\n    \"fg_color\": [\"#939BA2\", \"#4A4D50\"],\r\n    \"progress_color\": [\"#3a7ebf\", \"#1f538d\"],\r\n    \"button_color\": [\"gray36\", \"#D5D9DE\"],\r\n    \"button_hover_color\": [\"gray20\", \"gray100\"],\r\n    \"text_color\": [\"gray14\", \"gray84\"],\r\n    \"text_color_disabled\": [\"gray60\", \"gray45\"]\r\n  },\r\n  \"CTkRadioButton\": {\r\n    \"corner_radius\": 1000,\r\n    \"border_width_checked\": 6,\r\n    \"border_width_unchecked\": 3,\r\n    \"fg_color\": [\"#3a7ebf\", \"#1f538d\"],\r\n    \"border_color\": [\"#3E454A\", \"#949A9F\"],\r\n    \"hover_color\": [\"#325882\", \"#14375e\"],\r\n    \"text_color\": [\"gray14\", \"gray84\"],\r\n    \"text_color_disabled\": [\"gray60\", \"gray45\"]\r\n  },\r\n  \"CTkProgressBar\": {\r\n    \"corner_radius\": 1000,\r\n    \"border_width\": 0,\r\n    \"fg_color\": [\"#939BA2\", \"#4A4D50\"],\r\n    \"progress_color\": [\"#3a7ebf\", \"#1f538d\"],\r\n    \"border_color\": [\"gray\", \"gray\"]\r\n  },\r\n  \"CTkSlider\": {\r\n    \"corner_radius\": 1000,\r\n    \"button_corner_radius\": 1000,\r\n    \"border_width\": 6,\r\n    \"button_length\": 0,\r\n    \"fg_color\": [\"#939BA2\", \"#4A4D50\"],\r\n    \"progress_color\": [\"gray40\", \"#AAB0B5\"],\r\n    \"button_color\": [\"#3a7ebf\", \"#1f538d\"],\r\n    \"button_hover_color\": [\"#325882\", \"#14375e\"]\r\n  },\r\n  \"CTkOptionMenu\": {\r\n    \"corner_radius\": 6,\r\n    \"fg_color\": [\"#3a7ebf\", \"#1f538d\"],\r\n    \"button_color\": [\"#325882\", \"#14375e\"],\r\n    \"button_hover_color\": [\"#234567\", \"#1e2c40\"],\r\n    \"text_color\": [\"#DCE4EE\", \"#DCE4EE\"],\r\n    \"text_color_disabled\": [\"gray74\", \"gray60\"]\r\n  },\r\n  \"CTkComboBox\": {\r\n    \"corner_radius\": 6,\r\n    \"border_width\": 2,\r\n    \"fg_color\": [\"#F9F9FA\", \"#343638\"],\r\n    \"border_color\": [\"#979DA2\", \"#565B5E\"],\r\n    \"button_color\": [\"#979DA2\", \"#565B5E\"],\r\n    \"button_hover_color\": [\"#6E7174\", \"#7A848D\"],\r\n    \"text_color\": [\"gray14\", \"gray84\"],\r\n    \"text_color_disabled\": [\"gray50\", \"gray45\"]\r\n  },\r\n  \"CTkScrollbar\": {\r\n    \"corner_radius\": 1000,\r\n    \"border_spacing\": 4,\r\n    \"fg_color\": \"transparent\",\r\n    \"button_color\": [\"gray55\", \"gray41\"],\r\n    \"button_hover_color\": [\"gray40\", \"gray53\"]\r\n  },\r\n  \"CTkSegmentedButton\": {\r\n    \"corner_radius\": 6,\r\n    \"border_width\": 2,\r\n    \"fg_color\": [\"#979DA2\", \"gray29\"],\r\n    \"selected_color\": [\"#3a7ebf\", \"#1f538d\"],\r\n    \"selected_hover_color\": [\"#325882\", \"#14375e\"],\r\n    \"unselected_color\": [\"#979DA2\", \"gray29\"],\r\n    \"unselected_hover_color\": [\"gray70\", \"gray41\"],\r\n    \"text_color\": [\"#DCE4EE\", \"#DCE4EE\"],\r\n    \"text_color_disabled\": [\"gray74\", \"gray60\"]\r\n  },\r\n  \"CTkTextbox\": {\r\n    \"corner_radius\": 6,\r\n    \"border_width\": 0,\r\n    \"fg_color\": [\"gray100\", \"gray20\"],\r\n    \"border_color\": [\"#979DA2\", \"#565B5E\"],\r\n    \"text_color\": [\"gray14\", \"gray84\"],\r\n    \"scrollbar_button_color\": [\"gray55\", \"gray41\"],\r\n    \"scrollbar_button_hover_color\": [\"gray40\", \"gray53\"]\r\n  },\r\n  \"CTkScrollableFrame\": {\r\n    \"label_fg_color\": [\"gray80\", \"gray21\"]\r\n  },\r\n  \"DropdownMenu\": {\r\n    \"fg_color\": [\"gray90\", \"gray20\"],\r\n    \"hover_color\": [\"gray75\", \"gray28\"],\r\n    \"text_color\": [\"gray14\", \"gray84\"]\r\n  },\r\n  \"CTkFont\": {\r\n    \"macOS\": {\r\n      \"family\": \"SF Display\",\r\n      \"size\": 13,\r\n      \"weight\": \"normal\"\r\n    },\r\n    \"Windows\": {\r\n      \"family\": \"Roboto\",\r\n      \"size\": 13,\r\n      \"weight\": \"normal\"\r\n    },\r\n    \"Linux\": {\r\n      \"family\": \"Roboto\",\r\n      \"size\": 13,\r\n      \"weight\": \"normal\"\r\n    }\r\n  },\r\n\r\n  \"ContainerPanel\": {\r\n    \"corner_radius\": 0,\r\n    \"border_width\": 0,\r\n    \"fg_color\": \"transparent\",\r\n    \"border_color\": [\"gray65\", \"gray28\"]\r\n  },\r\n\r\n  \"CustomPanel\": {\r\n    \"corner_radius\": 2,\r\n    \"border_width\": 0,\r\n    \"fg_color\": [\"_main\", \"#121211\"],\r\n    \"border_color\": [\"_complementary\", \"gray28\"]\r\n  },\r\n\r\n  \"CustomButton\": {\r\n    \"corner_radius\": 0,\r\n    \"fg_color\": \"#ff0000\",\r\n    \"bg_color\": \"#ff00ff\",\r\n    \"text\": \"\",\r\n    \"text_color\": [\"_light_text\", \"gray84\"],\r\n    \"additional_styles\": {\r\n      \"styles_idle\": {\r\n        \"width\": 30,\r\n        \"height\": 30,\r\n        \"color\": \"_secondary\",\r\n        \"text_color\": \"_light_text\"\r\n      },\r\n      \"styles_click\": {\r\n        \"width\": 30,\r\n        \"height\": 30,\r\n        \"color\": \"_main\",\r\n        \"text_color\": \"_light_text\"\r\n      },\r\n      \"styles_hover\": {\r\n        \"width\": 30,\r\n        \"height\": 30,\r\n        \"color\": \"_complementary\",\r\n        \"text_color\": \"_light_text\"\r\n      }\r\n    }\r\n  },\r\n  \"FileOpenButton\": {\r\n    \"corner_radius\": 0,\r\n    \"fg_color\": \"transparent\",\r\n    \"bg_color\": \"transparent\",\r\n    \"text\": \"\",\r\n    \"additional_styles\": {\r\n      \"styles_idle\": {\r\n        \"width\": 60,\r\n        \"height\": 30,\r\n        \"color\": \"#412c20\",\r\n        \"corner_radius\": 2,\r\n        \"border_width\": 0,\r\n        \"text\": \"open\",\r\n        \"text_color\": \"_light_text\"\r\n      },\r\n      \"styles_click\": {\r\n        \"width\": 60,\r\n        \"height\": 30,\r\n        \"color\": \"#815a4a\",\r\n        \"corner_radius\": 2,\r\n        \"border_width\": 0,\r\n        \"text\": \"open\",\r\n        \"text_color\": \"_light_text\"\r\n      },\r\n      \"styles_hover\": {\r\n        \"width\": 60,\r\n        \"height\": 30,\r\n        \"color\": \"#704939\",\r\n        \"corner_radius\": 2,\r\n        \"border_width\": 0,\r\n        \"text\": \"open\",\r\n        \"text_color\": \"_light_text\"\r\n      }\r\n    }\r\n  },\r\n  \"PalletAddButton\": {\r\n    \"corner_radius\": 0,\r\n    \"fg_color\": \"transparent\",\r\n    \"bg_color\": \"transparent\",\r\n    \"text\": \"\",\r\n    \"additional_styles\": {\r\n      \"styles_idle\": {\r\n        \"width\": 30,\r\n        \"height\": 30,\r\n        \"color\": \"#c9d3d5\",\r\n        \"corner_radius\": 6,\r\n        \"border_width\": 3,\r\n        \"border_color\": \"_accent\",\r\n        \"text\": \"\",\r\n        \"text_color\": \"_light_text\",\r\n        \"icon\": \"plus_icon.png\"\r\n      },\r\n      \"styles_click\": {\r\n        \"width\": 28,\r\n        \"height\": 28,\r\n        \"color\": \"#ccdbd5\",\r\n        \"corner_radius\": 6,\r\n        \"border_width\": 5,\r\n        \"border_color\": \"_accent\",\r\n        \"text\": \"\",\r\n        \"text_color\": \"_light_text\",\r\n        \"icon\": \"plus_icon.png\"\r\n      },\r\n      \"styles_hover\": {\r\n        \"width\": 30,\r\n        \"height\": 30,\r\n        \"color\": \"#c9d3d5\",\r\n        \"corner_radius\": 6,\r\n        \"border_width\": 4,\r\n        \"border_color\": \"_accent\",\r\n        \"text\": \"\",\r\n        \"text_color\": \"_light_text\",\r\n        \"icon\": \"plus_icon.png\"\r\n      }\r\n    }\r\n  },\r\n\r\n  \"CustomRadioButton\": {\r\n    \"corner_radius\": 0,\r\n    \"fg_color\": \"transparent\",\r\n    \"text\": \"\",\r\n    \"text_color\": [\"gray14\", \"gray84\"],\r\n    \"additional_styles\": {\r\n      \"styles_on\": {\r\n        \"size\": 30,\r\n        \"color\": \"_accent\"\r\n       },\r\n      \"styles_off\": {\r\n        \"size\": 30,\r\n        \"color\": \"_secondary\"\r\n      }\r\n    }\r\n  },\r\n  \"PalletRadioButton\": {\r\n    \"corner_radius\": 0,\r\n    \"fg_color\": \"transparent\",\r\n    \"text\": \"\",\r\n    \"text_color\": [\"gray14\", \"gray84\"],\r\n    \"additional_styles\": {\r\n      \"styles_on\": {\r\n        \"size\": 30,\r\n        \"color\": \"_secondary\",\r\n        \"border_color\": \"#000000\",\r\n        \"inner_border_color\": \"#fefde9\",\r\n        \"border_width\": 1,\r\n        \"inner_border_width\": 2,\r\n        \"corner_radius\": 1\r\n       },\r\n      \"styles_off\": {\r\n        \"size\": 30,\r\n        \"color\": \"_secondary\",\r\n        \"border_color\": \"#000000\",\r\n        \"inner_border_color\": \"#FFFFFF\",\r\n        \"border_width\": 2,\r\n        \"inner_border_width\": 1,\r\n        \"corner_radius\": 1\r\n      }\r\n    }\r\n  },\r\n  \"ToolRadioButton\": {\r\n    \"corner_radius\": 0,\r\n    \"fg_color\": \"transparent\",\r\n    \"text\": \"\",\r\n    \"text_color\": [\"gray14\", \"gray84\"],\r\n    \"additional_styles\": {\r\n      \"styles_off\": {\r\n        \"size\": 30,\r\n        \"color\": \"#c9d3d5\",\r\n        \"border_color\": \"#171717\",\r\n        \"inner_border_color\": \"#e9f3f5\",\r\n        \"border_width\": 3,\r\n        \"inner_border_width\": 2,\r\n        \"corner_radius\": 5,\r\n        \"icon_resizable\": true,\r\n        \"icons\": {\r\n          \"hand_tool\": \"hand_tool_icon.png\",\r\n          \"brush_tool\": \"brush_tool_icon.png\",\r\n          \"pipette_tool\": \"pipette_tool_icon.png\",\r\n          \"fill_tool\": \"fill_tool_icon.png\",\r\n          \"erase_tool\": \"erase_tool_icon.png\"\r\n        }\r\n       },\r\n      \"styles_on\": {\r\n        \"size\": 30,\r\n        \"color\": \"#ccdbd5\",\r\n        \"border_color\": \"#FFFFFF\",\r\n        \"inner_border_color\": \"#f3f3f3\",\r\n        \"border_width\": 2,\r\n        \"inner_border_width\": 1,\r\n        \"corner_radius\": 5,\r\n        \"icon_resizable\": true,\r\n        \"icons\": {\r\n          \"hand_tool\": \"hand_tool_icon.png\",\r\n          \"brush_tool\": \"brush_tool_icon.png\",\r\n          \"pipette_tool\": \"pipette_tool_icon.png\",\r\n          \"fill_tool\": \"fill_tool_icon.png\",\r\n          \"erase_tool\": \"erase_tool_icon2.png\"\r\n\r\n        }\r\n      }\r\n    }\r\n  },\r\n  \"CustomRadioButtonFrame\": {\r\n    \"fg_color\": \"_complementary\",\r\n    \"additional_styles\": {\r\n      \"padx\": [0, 0],\r\n      \"pady\": [0, 0]\r\n    }\r\n  },\r\n  \"PalletRadioButtonFrame\": {\r\n    \"fg_color\": \"_complementary\",\r\n    \"additional_styles\": {\r\n      \"padx\": [0, 0],\r\n      \"pady\": [0, 0]\r\n    }\r\n  },\r\n  \"ToolRadioButtonFrame\": {\r\n    \"fg_color\": \"_complementary\",\r\n    \"additional_styles\": {\r\n      \"padx\": [0, 0],\r\n      \"pady\": [0, 0]\r\n    }\r\n  },\r\n\r\n  \"Pallet\": {\r\n    \"corner_radius\": 0,\r\n    \"border_width\": 0,\r\n    \"fg_color\": \"transparent\",\r\n    \"additional_styles\": {\r\n      \"width\": 120,\r\n      \"height\": 120,\r\n      \"border_width\": 1,\r\n      \"border_color\": \"#ff0000\",\r\n      \"pointer_radius\": 8,\r\n      \"pointer_border\": 3,\r\n      \"spectre_width\": 20,\r\n      \"spectre_indent\": -12,\r\n      \"bg_color\": \"_main\"\r\n     }\r\n  },\r\n\r\n  \"PalletDisplayFrame\": {\r\n    \"corner_radius\": 20,\r\n    \"border_width\": 3,\r\n    \"border_color\": \"_accent\",\r\n    \"width\": 200,\r\n    \"height\": 50,\r\n    \"fg_color\": \"_complementary\",\r\n    \"text\": \"\",\r\n    \"additional_styles\": {\r\n      \"width\": 65,\r\n      \"selection_color\": \"#C36743\",\r\n      \"selection_text_color\": \"#FFFFFF\",\r\n      \"entry_border_width\": 2,\r\n      \"container_border_width\": 0,\r\n      \"entry_padx\": [5, 5],\r\n      \"entry_pady\": [5, 5],\r\n      \"container_padx\": [5, 5],\r\n      \"container_pady\": [5, 5],\r\n      \"hash_indent\" : 5\r\n\r\n    }\r\n  },\r\n  \"ColorSlider\": {\r\n    \"fg_color\": \"red\",\r\n    \"bg\": \"#ff00ff\",\r\n    \"additional_styles\": {\r\n      \"width\": 200,\r\n      \"height\": 20\r\n    }\r\n  },\r\n\r\n\r\n  \"ImageRenderer\": {\r\n    \"corner_radius\": 5,\r\n    \"border_width\": 0,\r\n    \"fg_color\": \"transparent\",\r\n    \"bg_color\": \"transparent\",\r\n    \"border_color\": [\"_accent\", \"gray28\"],\r\n     \"additional_styles\": {\r\n       \"canvas_bg\": \"#6E6E6E\",\r\n       \"out_border_color\": \"#000000\",\r\n       \"out_border_width\": 2,\r\n       \"mid_border_color\": \"#ffffff\",\r\n       \"mid_border_width\": 4,\r\n       \"inner_border_color\": \"#000000\",\r\n       \"inner_border_width\": 2\r\n     }\r\n  },\r\n\r\n  \"App\": {\r\n    \"fg_color\": \"_main\"\r\n  }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/themes/dark.json b/themes/dark.json
+--- a/themes/dark.json	(revision f3f6907b86634f6391c8cc3d223539b4fbae74ea)
++++ b/themes/dark.json	(date 1744948356387)
+@@ -2,7 +2,7 @@
+    "_colors": {
+     "_main": "#3b3531",
+     "_secondary": "#6c655e",
+-    "_accent": "#cecaba",
++    "_accent": "#eae6d6",
+     "_complementary": "#374448",
+     "_light_text": "#fff3ee",
+     "_dark_text": "#0d0400"
+@@ -248,7 +248,7 @@
+       "styles_idle": {
+         "width": 30,
+         "height": 30,
+-        "color": "#c9d3d5",
++        "color": "#ecf6f8",
+         "corner_radius": 6,
+         "border_width": 3,
+         "border_color": "_accent",
+@@ -262,7 +262,7 @@
+         "color": "#ccdbd5",
+         "corner_radius": 6,
+         "border_width": 5,
+-        "border_color": "_accent",
++        "border_color": "#ccdbd5",
+         "text": "",
+         "text_color": "_light_text",
+         "icon": "plus_icon.png"
+@@ -270,10 +270,10 @@
+       "styles_hover": {
+         "width": 30,
+         "height": 30,
+-        "color": "#c9d3d5",
++        "color": "#A2A2A2",
+         "corner_radius": 6,
+         "border_width": 4,
+-        "border_color": "_accent",
++        "border_color": "#A2A2A2",
+         "text": "",
+         "text_color": "_light_text",
+         "icon": "plus_icon.png"
+@@ -323,6 +323,32 @@
+       }
+     }
+   },
++  "PalletClusterCenterRadioButton": {
++    "corner_radius": 0,
++    "fg_color": "transparent",
++    "text": "",
++    "text_color": ["gray14", "gray84"],
++    "additional_styles": {
++      "styles_on": {
++        "size": 30,
++        "color": "_secondary",
++        "border_color": "#000000",
++        "inner_border_color": "#fefde9",
++        "border_width": 1,
++        "inner_border_width": 2,
++        "corner_radius": 1
++       },
++      "styles_off": {
++        "size": 30,
++        "color": "_secondary",
++        "border_color": "#000000",
++        "inner_border_color": "#FFFFFF",
++        "border_width": 2,
++        "inner_border_width": 1,
++        "corner_radius": 1
++      }
++    }
++  },
+   "ToolRadioButton": {
+     "corner_radius": 0,
+     "fg_color": "transparent",
+@@ -343,7 +369,8 @@
+           "brush_tool": "brush_tool_icon.png",
+           "pipette_tool": "pipette_tool_icon.png",
+           "fill_tool": "fill_tool_icon.png",
+-          "erase_tool": "erase_tool_icon.png"
++          "erase_tool": "erase_tool_icon.png",
++          "center_chooser_tool": "center_chooser_tool.png"
+         }
+        },
+       "styles_on": {
+@@ -360,7 +387,8 @@
+           "brush_tool": "brush_tool_icon.png",
+           "pipette_tool": "pipette_tool_icon.png",
+           "fill_tool": "fill_tool_icon.png",
+-          "erase_tool": "erase_tool_icon2.png"
++          "erase_tool": "erase_tool_icon2.png",
++          "center_chooser_tool": "center_chooser_tool.png"
+ 
+         }
+       }
+@@ -380,6 +408,13 @@
+       "pady": [0, 0]
+     }
+   },
++   "PalletClustersCentersFrame": {
++    "fg_color": "_complementary",
++    "additional_styles": {
++      "padx": [0, 0],
++      "pady": [0, 0]
++    }
++  },
+   "ToolRadioButtonFrame": {
+     "fg_color": "_complementary",
+     "additional_styles": {
+@@ -445,11 +480,11 @@
+     "border_color": ["_accent", "gray28"],
+      "additional_styles": {
+        "canvas_bg": "#6E6E6E",
+-       "out_border_color": "#000000",
+-       "out_border_width": 2,
+-       "mid_border_color": "#ffffff",
+-       "mid_border_width": 4,
+-       "inner_border_color": "#000000",
++       "out_border_color": "#ffffff",
++       "out_border_width": 3,
++       "mid_border_color": "#000000",
++       "mid_border_width": 1,
++       "inner_border_color": "#555555",
+        "inner_border_width": 2
+      }
+   },
+Index: test.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/test.py b/test.py
+--- a/test.py	(revision f3f6907b86634f6391c8cc3d223539b4fbae74ea)
++++ b/test.py	(date 1745578135133)
+@@ -1,0 +1,127 @@
++import numpy as np
++import cv2
++import matplotlib.pyplot as plt
++import os
++from customtkinter import filedialog
++from PIL import Image
++import joblib
++from utils.clust_test import export_contours_to_svg, contours_from_labels, draw_vector_contours, smooth_contour, cluster_image_fast
++import pandas as pd
++
++
++count = 4
++ksize = 9
++# start_centers = [(255, 255, 0), (0, 0, 255), (0, 100, 150), (200, 0, 50)]
++start_centers = [(255, 255, 0), (0, 100, 150)]
++
++valid_types = ["jpg", "jpeg", "png", "bmp"]
++file_types = [("Images", "".join(f'*.{valid_type} ' for valid_type in valid_types).strip()), ("All files", "*.*")]
++_dir = os.path.expanduser("C:/Users/User/Desktop")
++
++file_path = filedialog.askopenfilename(title="Select an image", initialdir=_dir, filetypes=file_types)
++
++if file_path and os.path.isfile(file_path):
++    file_type = os.path.splitext(file_path)[1][1:].lower()
++    if file_type in valid_types:
++        current_file = file_path
++        image = Image.open(current_file)
++        w, h = image.size
++        image_np = np.array(image)
++        image_np = cv2.GaussianBlur(image_np, (ksize, ksize), 0)
++        start_centers_BGR = [(b, g, r) for (r, g, b) in start_centers]
++
++        segmented_image_np, (retvals, labels, centers) = cluster_image_fast(image_np, count, start_centers_BGR)
++        labels_2d = labels.reshape((h, w))
++        segmented_image = Image.fromarray(segmented_image_np)
++
++        # contours_vec = extract_vector_contours_from_labels(labels_2d)
++        contours = contours_from_labels(labels_2d, _type=cv2.CHAIN_APPROX_SIMPLE)
++
++        new_width, new_height = int(w / 0.5), int(h / 0.5)
++        scale_x = new_width / w
++        scale_y = new_height / h
++
++        smoothed = contours
++        base_cnt = draw_vector_contours((new_width, new_height), smoothed)
++        cv2.imshow(f"base_cnt", base_cnt)
++
++        model = joblib.load("epsilon_model3.joblib")
++        eps = 0.002
++        first = smoothed[0]
++        avg_len = 0
++        for _ in range(1):
++            result = []
++            for index, _cnt in enumerate(smoothed):
++                cur_len = int(cv2.arcLength(_cnt, True))
++                cur_area = int(cv2.contourArea(_cnt))
++                cur_count = len(_cnt)
++                cur_density = cur_len / cur_count
++                cur_x = pd.DataFrame([[cur_len, cur_area, cur_count, cur_density]], columns=["len", "area", "count", "density"])
++                cur_pred = model.predict(cur_x)
++                eps = np.expm1(cur_pred)[0]
++                current, key_angles_cnt = smooth_contour(_cnt, eps, 0.995)
++                result.append(current)
++            smoothed = result
++
++        # 4. Визуализация
++        plt.figure(figsize=(12, 6))
++
++        # Исходный контур
++        plt.subplot(121)
++        plt.title("Исходный контур")
++        for contour in contours:
++            pts = contour.squeeze(1)
++            plt.plot(pts[:, 0], pts[:, 1], 'r-', linewidth=2)
++            plt.scatter(pts[:, 0], pts[:, 1], c='blue', s=30)
++        plt.gca().invert_yaxis()
++        plt.grid(True)
++
++        # Сглаженный контур
++        plt.subplot(122)
++        plt.title("Сглаженный контур")
++        for contour in smoothed:
++            pts = contour.squeeze(1)
++            plt.plot(pts[:, 0], pts[:, 1], 'g-', linewidth=2)
++            plt.scatter(pts[:, 0], pts[:, 1], c='red', s=50, marker='x')
++        plt.gca().invert_yaxis()
++        plt.grid(True)
++
++        plt.tight_layout()
++        plt.show()
++
++        contoured_image_array = draw_vector_contours((new_width, new_height), contours)
++        contoured_image = Image.fromarray(contoured_image_array)
++
++        export_contours_to_svg(
++            contours=contours,
++            filename="contours.svg",
++            width=new_width,
++            height=new_height,
++            scale_x=scale_x,
++            scale_y=scale_y,
++            smooth=False,
++            stroke_color="black",
++            stroke_width=1,
++            stroke_opacity=1.0,
++            fill=False
++        )
++
++
++        smoothed_contoured_image_array = draw_vector_contours((new_width, new_height), smoothed)
++        smoothed_contoured_image = Image.fromarray(smoothed_contoured_image_array)
++
++        export_contours_to_svg(
++            contours=smoothed,
++            filename="contours_smoothed.svg",
++            width=new_width,
++            height=new_height,
++            scale_x=scale_x,
++            scale_y=scale_y,
++            smooth=False,
++            stroke_color="black",
++            stroke_width=1,
++            stroke_opacity=1.0,
++            fill=False
++        )
++
++
+Index: widgets/pallet_clusters_centers_frame.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/widgets/pallet_clusters_centers_frame.py b/widgets/pallet_clusters_centers_frame.py
+new file mode 100644
+--- /dev/null	(date 1744971983037)
++++ b/widgets/pallet_clusters_centers_frame.py	(date 1744971983037)
+@@ -0,0 +1,33 @@
++import customtkinter as ctk
++from widgets.base import BaseWidget
++from widgets.pallet_radio_button import PalletRadioButton
++from widgets.custom_radio_button_frame import CustomRadioButtonFrame
++from widgets.pallet_cluster_center_radio_button import PalletClusterCenterRadioButton
++
++
++class PalletClustersCentersFrame(CustomRadioButtonFrame):
++    subscriptions = {"center_added": "add_center", "center_deleted" : "remove"}
++
++    def __init__(self, master, _event_bus, _is_last=False, **kwargs):
++        CustomRadioButtonFrame.__init__(self, master=master, _event_bus=_event_bus, **kwargs)
++        if _is_last:
++            self.init_subscribes()
++
++    def add_center(self, _center_color):
++        if not _center_color:
++            return
++        if _center_color not in self.buttons:
++            button = PalletClusterCenterRadioButton(self, self.event_bus, _center_color, self.variable, _center_color, _is_last=True)
++            self.buttons[_center_color] = button
++
++            if not self.object_full_size:
++                self.init_object_full_size(button)
++
++            self.columns = self.calc_columns()
++            self.rows = self.calc_rows()
++            self.buttons[_center_color].grid(row=self.rows - 1, column=(len(self.buttons) - 1) % self.columns, padx=self.object_padx, pady=self.object_pady, sticky="nw")
++            self.update_scrollbar()
++
++
++    def get_centers(self) -> list[str]:
++        return list(self.buttons.keys())
+Index: core/file_manager.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+># Provides file logic\r\nimport os\r\nfrom customtkinter import filedialog\r\nfrom PIL import Image\r\n\r\nclass FileManager:\r\n    def __init__(self, _event_bus):\r\n        self.event_bus = _event_bus\r\n        self.valid_types = [\"jpg\", \"jpeg\", \"png\", \"bmp\"]\r\n        self.file_types = [(\"Images\", \"\".join(f'*.{valid_type} ' for valid_type in self.valid_types).strip()), (\"All files\", \"*.*\")]\r\n        self.current_file = None\r\n        self.current_file_dir = None\r\n\r\n        self.event_bus.subscribe(\"file_selected\", self.open_file)\r\n\r\n    def open_file(self, _is_opening, _dir=None):\r\n        if not _is_opening:\r\n            return\r\n        _dir = _dir or self.current_file_dir or os.path.expanduser(\"~\")\r\n\r\n        file_path = filedialog.askopenfilename(title=\"Select an image\", initialdir=_dir, filetypes=self.file_types)\r\n\r\n        if file_path and os.path.isfile(file_path):\r\n            file_type = os.path.splitext(file_path)[1][1:].lower()\r\n            if file_type in self.valid_types:\r\n                self.current_file = file_path\r\n                self.current_file_dir = os.path.dirname(file_path)\r\n                image = Image.open(self.current_file)\r\n                self.event_bus.send_state(\"file_opened\", image)\r\n\r\n\r\n\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/core/file_manager.py b/core/file_manager.py
+--- a/core/file_manager.py	(revision f3f6907b86634f6391c8cc3d223539b4fbae74ea)
++++ b/core/file_manager.py	(date 1744974091929)
+@@ -12,6 +12,7 @@
+         self.current_file_dir = None
+ 
+         self.event_bus.subscribe("file_selected", self.open_file)
++        self.event_bus.subscribe("file_saved", self.save_file)
+ 
+     def open_file(self, _is_opening, _dir=None):
+         if not _is_opening:
+@@ -28,6 +29,7 @@
+                 image = Image.open(self.current_file)
+                 self.event_bus.send_state("file_opened", image)
+ 
+-
++    def save_file(self, _file):
++        pass
+ 
+ 
+Index: core/app.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import customtkinter as ctk\r\nimport colour\r\nfrom core.event_bus import EventBus\r\nfrom core.theme_manager import ThemeManager\r\nfrom core.tool_manager import ToolManager\r\nfrom core.file_manager import FileManager\r\nfrom core.focus_manager import FocusManager\r\nfrom core.models.tools import HandTool, BrushTool, PipetteTool, FillTool, EraseTool\r\n\r\nfrom widgets.base import BaseWidget\r\nfrom widgets.custom_panel import CustomPanel\r\nfrom widgets.container_panel import ContainerPanel\r\nfrom widgets.file_open_button import FileOpenButton\r\nfrom widgets.pallet_radio_button_frame import PalletRadioButtonFrame\r\nfrom widgets.pallet import Pallet\r\nfrom widgets.pallet_sliders_frame import PalletSlidersFrame\r\nfrom widgets.pallet_display_frame import PalletDisplayFrame\r\nfrom widgets.pallet_add_button import PalletAddButton\r\nfrom widgets.image_renderer import ImageRenderer\r\nfrom widgets.tool_radio_button_frame import ToolRadioButtonFrame\r\n\r\n\r\nclass App(BaseWidget, ctk.CTk):\r\n    def __init__(self):\r\n        ctk.CTk.__init__(self)\r\n\r\n        #   ---------------------------initialization of logistics and managers----------------------------------------\r\n        self.event_bus = EventBus()\r\n        self.file_manager = FileManager(self.event_bus)\r\n        self.theme_manager = ThemeManager(self.event_bus)\r\n        self.theme_manager.change_theme(\"dark\")\r\n        self.focus_manager = FocusManager(self, self.event_bus)\r\n        self.tool_manager = ToolManager(self.event_bus)\r\n        self.tools = {\r\n                        \"hand_tool\": HandTool(_event_bus=self.event_bus),\r\n                        \"brush_tool\": BrushTool(_event_bus=self.event_bus),\r\n                        \"pipette_tool\": PipetteTool(_event_bus=self.event_bus),\r\n                        \"fill_tool\": FillTool(_event_bus=self.event_bus),\r\n                        \"erase_tool\": EraseTool(_event_bus=self.event_bus),\r\n                      }\r\n\r\n        for name, tool in self.tools.items():\r\n            self.tool_manager.add_tool(_name=name, _tool=tool)\r\n\r\n        BaseWidget.__init__(self, _event_bus=self.event_bus)\r\n        #   ---------------------------------------setup a window------------------------------------------------------\r\n        self.title(\"NumPic\")\r\n        self.geometry(\"1000x500\")\r\n\r\n        #   2 rows x 3 columns\r\n        self.grid_rowconfigure(0, weight=0)\r\n        self.grid_rowconfigure(1, weight=1)\r\n\r\n        self.grid_columnconfigure(0, weight=0)\r\n        self.grid_columnconfigure(1, weight=1)\r\n        self.grid_columnconfigure(2, weight=0)\r\n\r\n        self._grid_padx = 0\r\n        self._grid_pady = 0\r\n\r\n        #   -------------------------------------setup ui-----------------------------------------------------\r\n        # TOP panel setup\r\n        self.top_panel = CustomPanel(self, self.event_bus, _is_last=True)\r\n        self.top_panel.grid(row=0, column=0, columnspan=3, sticky='we')\r\n\r\n        self.tp_file_open_button = FileOpenButton(self.top_panel, self.event_bus, _is_last=True)\r\n        self.tp_file_open_button.grid(row=0, column=0, sticky='w')\r\n\r\n        #   LEFT panel setup\r\n        self.left_panel = CustomPanel(self, self.event_bus, _is_last=True)\r\n        self.left_panel.grid(row=1, column=0, sticky='nswe')\r\n        #   2 rows x 1 columns\r\n        self.left_panel.grid_rowconfigure(0, weight=1)  # плиточная палитра\r\n        self.left_panel.grid_rowconfigure(1, weight=3)  # палитра\r\n        self.left_panel.grid_rowconfigure(2, weight=1)  # компоненты цвета\r\n        self.left_panel.grid_rowconfigure(3, weight=0)  # отображение цвета + кнопка\r\n        self.left_panel.grid_columnconfigure(0, weight=1)\r\n\r\n        #   плиточная палитра\r\n        self.lp_pallet_radio_button_frame = PalletRadioButtonFrame(self.left_panel, self.event_bus, _is_last=True)\r\n        self.lp_pallet_radio_button_frame.grid(row=0, column=0, padx=(5, 5), pady=(5, 5), sticky=\"nswe\")\r\n\r\n        #   палитра\r\n        self.lp_container = ContainerPanel(self.left_panel, _event_bus=self.event_bus, _is_last=True)\r\n        self.lp_container.grid(row=1, column=0, padx=(5, 5), pady=(0, 5), sticky='nsew')\r\n\r\n\r\n        self.lp_pallet = Pallet(self.lp_container, self.event_bus, _is_last=True)\r\n        self.lp_pallet.grid(row=0, column=0, padx=(5, 5), pady=(0, 5), sticky='nswe')\r\n\r\n        self.lp_container.grid_propagate(False)  # Чтобы контейнер не сжимался по контенту\r\n\r\n        # Узнаём необходимую высоту палитры\r\n        required_height = self.lp_pallet.canvas_d + 10  # небольшой запас на паддинги\r\n\r\n        # Защищаем строку, в которой находится контейнер палитры (row=1)\r\n        self.left_panel.grid_rowconfigure(1, minsize=required_height)\r\n\r\n        # временно CustomPanel\r\n        self.lp_pallet_sliders_frame = PalletSlidersFrame(self.left_panel, self.event_bus, _is_last=True)\r\n        self.lp_pallet_sliders_frame.grid(row=2, column=0, padx=(5, 5), pady=(0, 5), sticky=\"nswe\")\r\n\r\n        #   контейнер для отображения цвета и кнопки добавления\r\n        self.lp_display_add_container = ContainerPanel(self.left_panel, self.event_bus, _is_last=True)\r\n        self.lp_display_add_container.grid(row=3, column=0, padx=(5, 5), pady=(0, 5), sticky=\"swe\")\r\n        self.lp_display_add_container.grid_columnconfigure((0, 1), weight=1)\r\n\r\n        #   дисплей цвета\r\n        self.lp_pallet_display = PalletDisplayFrame(self.lp_display_add_container, self.event_bus, _is_last=True)\r\n        self.lp_pallet_display.grid(row=0, column=0, padx=(0, 5), pady=(0, 0), sticky=\"nsew\")\r\n\r\n\r\n        #   кнопка добавления\r\n        self.lp_pallet_add = PalletAddButton(self.lp_display_add_container, self.event_bus, _is_last=True)\r\n        self.lp_pallet_add.grid(row=0, column=1, padx=(0, 0), pady=(0, 0), sticky=\"\")\r\n\r\n        # MAIN ZONE\r\n\r\n        self.editor_use_zone = ImageRenderer(self, self.event_bus, _is_last=True)\r\n        self.editor_use_zone.grid(row=1, column=1, sticky=\"nswe\")\r\n        self.tool_manager.add_use_zone(\"editor\", self.editor_use_zone)\r\n\r\n        # RIGHT panel setup\r\n        self.right_panel = CustomPanel(self, self.event_bus, _is_last=True)\r\n        self.right_panel.grid(row=1, column=2, sticky='nse')\r\n        #   3 rows x 1 columns\r\n        self.right_panel.grid_rowconfigure(0, weight=1)\r\n        self.right_panel.grid_rowconfigure(1, weight=1)\r\n        self.right_panel.grid_rowconfigure(2, weight=1)\r\n        self.right_panel.grid_columnconfigure(0, weight=1)\r\n\r\n        #   панель инструментов\r\n        self.rp_tool_radio_button_frame = ToolRadioButtonFrame(self.right_panel, self.event_bus, _is_last=True)\r\n        self.rp_tool_radio_button_frame.grid(row=0, column=0, padx=(5, 5), pady=(5, 5), sticky=\"ns\")\r\n\r\n        #   add tools to the tool_panel\r\n        for _tool_name in self.tools:\r\n            self.rp_tool_radio_button_frame.add_tool(_tool_name)\r\n\r\n        # RENDER ZONE\r\n        self.render_use_zone = ImageRenderer(self.right_panel, self.event_bus, _is_last=True, width=250, height=250)\r\n        self.render_use_zone.grid(row=1, column=0, padx=(5, 5), pady=(5, 0), sticky=\"\")\r\n        self.tool_manager.add_use_zone(\"render\", self.render_use_zone)\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/core/app.py b/core/app.py
+--- a/core/app.py	(revision f3f6907b86634f6391c8cc3d223539b4fbae74ea)
++++ b/core/app.py	(date 1744935660439)
+@@ -5,7 +5,7 @@
+ from core.tool_manager import ToolManager
+ from core.file_manager import FileManager
+ from core.focus_manager import FocusManager
+-from core.models.tools import HandTool, BrushTool, PipetteTool, FillTool, EraseTool
++from core.models.tools import HandTool, BrushTool, PipetteTool, FillTool, EraseTool, CenterChooserTool
+ 
+ from widgets.base import BaseWidget
+ from widgets.custom_panel import CustomPanel
+@@ -18,6 +18,7 @@
+ from widgets.pallet_add_button import PalletAddButton
+ from widgets.image_renderer import ImageRenderer
+ from widgets.tool_radio_button_frame import ToolRadioButtonFrame
++from widgets.pallet_clusters_centers_frame import PalletClustersCentersFrame
+ 
+ 
+ class App(BaseWidget, ctk.CTk):
+@@ -37,6 +38,7 @@
+                         "pipette_tool": PipetteTool(_event_bus=self.event_bus),
+                         "fill_tool": FillTool(_event_bus=self.event_bus),
+                         "erase_tool": EraseTool(_event_bus=self.event_bus),
++                        "center_chooser_tool": CenterChooserTool(_event_bus=self.event_bus),
+                       }
+ 
+         for name, tool in self.tools.items():
+@@ -77,9 +79,18 @@
+         self.left_panel.grid_columnconfigure(0, weight=1)
+ 
+         #   плиточная палитра
+-        self.lp_pallet_radio_button_frame = PalletRadioButtonFrame(self.left_panel, self.event_bus, _is_last=True)
++        self.lp_pallets_container = ContainerPanel(self.left_panel, _event_bus=self.event_bus, _is_last=True)
++        self.lp_pallets_container.grid(row=0, column=0, padx=(5, 5), pady=(0, 5), sticky='nsew')
++        #   1 row x 2 columns
++        self.lp_pallets_container.grid_rowconfigure(0, weight=1)
++        self.lp_pallets_container.grid_columnconfigure((0, 1), weight=1)
++
++        self.lp_pallet_radio_button_frame = PalletRadioButtonFrame(self.lp_pallets_container, self.event_bus, _is_last=True)
+         self.lp_pallet_radio_button_frame.grid(row=0, column=0, padx=(5, 5), pady=(5, 5), sticky="nswe")
+ 
++        self.lp_pallet_clusters_centers_frame = PalletClustersCentersFrame(self.lp_pallets_container, self.event_bus, _is_last=True)
++        self.lp_pallet_clusters_centers_frame.grid(row=0, column=1, padx=(5, 5), pady=(5, 5), sticky="nswe")
++
+         #   палитра
+         self.lp_container = ContainerPanel(self.left_panel, _event_bus=self.event_bus, _is_last=True)
+         self.lp_container.grid(row=1, column=0, padx=(5, 5), pady=(0, 5), sticky='nsew')
+Index: core/models/tools.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import math\r\nfrom utils.color_models import rgb2hex, hex2rgb\r\nfrom utils.figures import fill_intervals, flood_fill_cv\r\nfrom PIL import ImageDraw\r\n\r\n\r\nclass BaseTool:\r\n\r\n    subscriptions = {}\r\n    binds = {}\r\n    binds_ids = {}\r\n    use_zones = []\r\n\r\n    def __init__(self, _event_bus):\r\n        self.event_bus = _event_bus\r\n\r\n    def init_subscribes(self):\r\n        for event, callback_name in self.subscriptions.items():\r\n            callback = getattr(self, callback_name)\r\n            self.event_bus.subscribe(event, callback)\r\n\r\n    def get_binds(self):\r\n        _result = {}\r\n        for event, callback_name in self.binds.items():\r\n            callback = getattr(self, callback_name)\r\n            _result[event] = callback\r\n        return _result\r\n\r\n    def activate(self, **kwargs):\r\n        self.init_subscribes()\r\n\r\n    def deactivate(self):\r\n        for event, callback in self.subscriptions.items():\r\n            self.event_bus.unsubscribe(event, callback)\r\n\r\n\r\nclass HandTool(BaseTool):\r\n    subscriptions = {\"use_zone_changed\": \"on_use_zone_changed\"}\r\n    binds = {\"<ButtonPress-1>\": \"on_grab\", \"<B1-Motion>\": \"on_drag\"}\r\n    use_zones = [\"editor\", \"render\"]\r\n\r\n    def __init__(self, _event_bus):\r\n        super().__init__(_event_bus)\r\n        self.renderer = None\r\n\r\n    def on_use_zone_changed(self, _use_zone):\r\n        if not _use_zone:\r\n            return\r\n        self.renderer = _use_zone\r\n\r\n    def on_grab(self, event):\r\n        if self.renderer:\r\n            self.renderer.canvas.scan_mark(event.x, event.y)\r\n\r\n    def on_drag(self, event):\r\n        if self.renderer:\r\n            # self.renderer.canvas.configure(cursor=\"fleur\")\r\n            self.renderer.canvas.scan_dragto(event.x, event.y, gain=1)\r\n            self.renderer.render()\r\n\r\n\r\nclass BrushTool(BaseTool):\r\n    subscriptions = {\"use_zone_changed\": \"on_use_zone_changed\", \"color_changed\": \"on_color_changed\", \"size_changed\": \"on_size_changed\"}\r\n    binds = {\"<ButtonPress-1>\": \"on_click\", \"<B1-Motion>\": \"on_drag\", \"<ButtonRelease-1>\": \"on_release\"}\r\n    use_zones = [\"editor\"]\r\n\r\n    def __init__(self, _event_bus):\r\n        super().__init__(_event_bus)\r\n        self.renderer = None\r\n        self.color = \"#000000\"\r\n        self.size = 2\r\n        self.stabilization = 2\r\n        self.last_x, self.last_y = None, None\r\n        self.points = []  # Буфер точек для стабилизации\r\n\r\n    def on_use_zone_changed(self, _use_zone):\r\n        if not _use_zone:\r\n            return\r\n        self.renderer = _use_zone\r\n\r\n    def on_color_changed(self, _color):\r\n        if not _color:\r\n            return\r\n        self.color = _color\r\n\r\n    def on_size_changed(self, _size):\r\n        if not _size:\r\n            return\r\n        self.size = _size\r\n\r\n    def on_click(self, event):\r\n        if not self.renderer:\r\n            return\r\n        self.last_x, self.last_y = self.canvas2pixel((event.x, event.y))\r\n        self.draw_brush(self.last_x, self.last_y)\r\n        self.renderer.render()\r\n\r\n    def on_drag(self, event):\r\n        if not self.renderer:\r\n            return\r\n        self.points.append(self.canvas2pixel((event.x, event.y)))\r\n        if len(self.points) > self.stabilization:\r\n            self.points.pop(0)\r\n\r\n        if len(self.points) > 1:\r\n            avg_x = sum(p[0] for p in self.points) // len(self.points)\r\n            avg_y = sum(p[1] for p in self.points) // len(self.points)\r\n            if self.last_x is not None and self.last_y is not None:\r\n                self.connect_points((avg_x, avg_y), (self.last_x, self.last_y))\r\n            self.last_x, self.last_y = avg_x, avg_y\r\n            self.renderer.render()\r\n\r\n    def on_release(self, event):\r\n        if not self.renderer:\r\n            return\r\n        self.connect_points((self.last_x, self.last_y), self.canvas2pixel((event.x, event.y)))\r\n        self.renderer.render()\r\n        self.last_x, self.last_y = None, None\r\n        self.points.clear()\r\n\r\n    def canvas2pixel(self, _pos):\r\n        x = self.renderer.canvas.canvasx(_pos[0])\r\n        y = self.renderer.canvas.canvasy(_pos[1])\r\n\r\n        return int(x / self.renderer.scale), int(y / self.renderer.scale)\r\n\r\n    def draw_brush(self, x, y):\r\n\r\n        r = int(self.size / 2)\r\n\r\n        if r <= 0:\r\n            self.renderer.draw.point((x, y), fill=self.color)\r\n        else:\r\n            self.renderer.draw.ellipse((x - r, y - r, x + r, y + r), fill=self.color)\r\n\r\n    def connect_points(self, _point1, _point2):\r\n        (x1, y1), (x2, y2) = _point1, _point2\r\n        steps = int(math.dist((x1, y1), (x2, y2)))\r\n        for i in range(steps):\r\n            t = i / steps\r\n            x = int(x1 + (x2 - x1) * t)\r\n            y = int(y1 + (y2 - y1) * t)\r\n            self.draw_brush(x, y)\r\n\r\n\r\nclass PipetteTool(BaseTool):\r\n    subscriptions = {\"use_zone_changed\": \"on_use_zone_changed\"}\r\n    binds = {\"<ButtonPress-1>\": \"on_click\", \"<B1-Motion>\": \"on_click\"}\r\n    use_zones = [\"editor\", \"render\"]\r\n\r\n    def __init__(self, _event_bus):\r\n        super().__init__(_event_bus)\r\n        self.renderer = None\r\n\r\n    def on_use_zone_changed(self, _use_zone):\r\n        if not _use_zone:\r\n            return\r\n        self.renderer = _use_zone\r\n\r\n    def on_click(self, event):\r\n        if self.renderer and self.renderer.img:\r\n            x, y = self.canvas2pixel((event.x, event.y))\r\n            width, height = self.renderer.img.size\r\n            if (0 <= x < width) and (0 <= y <= height):\r\n                r, g, b, a = self.renderer.img.getpixel((x, y))\r\n                color = rgb2hex((r, g, b))\r\n                self.event_bus.send_state(\"color_modify\", color)\r\n\r\n    def canvas2pixel(self, _pos):\r\n        x = self.renderer.canvas.canvasx(_pos[0])\r\n        y = self.renderer.canvas.canvasy(_pos[1])\r\n\r\n        return int(x / self.renderer.scale), int(y / self.renderer.scale)\r\n\r\n\r\nclass FillTool(BaseTool):\r\n    subscriptions = {\"use_zone_changed\": \"on_use_zone_changed\", \"color_changed\": \"on_color_changed\"}\r\n    binds = {\"<ButtonPress-1>\": \"on_click\"}\r\n    use_zones = [\"editor\"]\r\n\r\n    def __init__(self, _event_bus):\r\n        super().__init__(_event_bus)\r\n        self.renderer = None\r\n        self.color = \"#000000\"\r\n\r\n    def on_use_zone_changed(self, _use_zone):\r\n        if not _use_zone:\r\n            return\r\n        self.renderer = _use_zone\r\n\r\n    def on_color_changed(self, _color):\r\n        if not _color:\r\n            return\r\n        self.color = _color\r\n\r\n    def on_click(self, event):\r\n        if self.renderer:\r\n            x, y = self.canvas2pixel((event.x, event.y))\r\n            width, height = self.renderer.img.size\r\n            if (0 <= x < width) and (0 <= y <= height):\r\n                r, g, b = hex2rgb(self.color)\r\n                self.renderer.img = flood_fill_cv(self.renderer.img, (x, y), (r, g, b))\r\n                self.renderer.draw = ImageDraw.Draw(self.renderer.img)\r\n                self.renderer.render()\r\n\r\n    def canvas2pixel(self, _pos):\r\n        x = self.renderer.canvas.canvasx(_pos[0])\r\n        y = self.renderer.canvas.canvasy(_pos[1])\r\n\r\n        return int(x / self.renderer.scale), int(y / self.renderer.scale)\r\n\r\n\r\nclass EraseTool(BaseTool):\r\n    subscriptions = {\"use_zone_changed\": \"on_use_zone_changed\", \"size_changed\": \"on_size_changed\"}\r\n    binds = {\"<ButtonPress-1>\": \"on_click\", \"<B1-Motion>\": \"on_drag\", \"<ButtonRelease-1>\": \"on_release\"}\r\n    use_zones = [\"editor\"]\r\n\r\n    def __init__(self, _event_bus):\r\n        super().__init__(_event_bus)\r\n        self.renderer = None\r\n        self.color = \"#FFFFFF\"\r\n        self.size = 2\r\n        self.stabilization = 2\r\n        self.last_x, self.last_y = None, None\r\n        self.points = []  # Буфер точек для стабилизации\r\n\r\n    def on_use_zone_changed(self, _use_zone):\r\n        if not _use_zone:\r\n            return\r\n        self.renderer = _use_zone\r\n\r\n    def on_size_changed(self, _size):\r\n        if not _size:\r\n            return\r\n        self.size = _size\r\n\r\n    def on_click(self, event):\r\n        if not self.renderer:\r\n            return\r\n        self.last_x, self.last_y = self.canvas2pixel((event.x, event.y))\r\n        self.draw_brush(self.last_x, self.last_y)\r\n        self.renderer.render()\r\n\r\n    def on_drag(self, event):\r\n        if not self.renderer:\r\n            return\r\n        self.points.append(self.canvas2pixel((event.x, event.y)))\r\n        if len(self.points) > self.stabilization:\r\n            self.points.pop(0)\r\n\r\n        if len(self.points) > 1:\r\n            avg_x = sum(p[0] for p in self.points) // len(self.points)\r\n            avg_y = sum(p[1] for p in self.points) // len(self.points)\r\n            if self.last_x is not None and self.last_y is not None:\r\n                self.connect_points((avg_x, avg_y), (self.last_x, self.last_y))\r\n            self.last_x, self.last_y = avg_x, avg_y\r\n            self.renderer.render()\r\n\r\n    def on_release(self, event):\r\n        if not self.renderer:\r\n            return\r\n        self.connect_points((self.last_x, self.last_y), self.canvas2pixel((event.x, event.y)))\r\n        self.renderer.render()\r\n        self.last_x, self.last_y = None, None\r\n        self.points.clear()\r\n\r\n    def canvas2pixel(self, _pos):\r\n        x = self.renderer.canvas.canvasx(_pos[0])\r\n        y = self.renderer.canvas.canvasy(_pos[1])\r\n\r\n        return int(x / self.renderer.scale), int(y / self.renderer.scale)\r\n\r\n    def draw_brush(self, x, y):\r\n\r\n        r = int(self.size / 2)\r\n\r\n        if r <= 0:\r\n            self.renderer.draw.point((x, y), fill=self.color)\r\n        else:\r\n            self.renderer.draw.ellipse((x - r, y - r, x + r, y + r), fill=self.color)\r\n\r\n    def connect_points(self, _point1, _point2):\r\n        (x1, y1), (x2, y2) = _point1, _point2\r\n        steps = int(math.dist((x1, y1), (x2, y2)))\r\n        for i in range(steps):\r\n            t = i / steps\r\n            x = int(x1 + (x2 - x1) * t)\r\n            y = int(y1 + (y2 - y1) * t)\r\n            self.draw_brush(x, y)
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/core/models/tools.py b/core/models/tools.py
+--- a/core/models/tools.py	(revision f3f6907b86634f6391c8cc3d223539b4fbae74ea)
++++ b/core/models/tools.py	(date 1744956402571)
+@@ -1,7 +1,8 @@
+ import math
+ from utils.color_models import rgb2hex, hex2rgb
+-from utils.figures import fill_intervals, flood_fill_cv
+-from PIL import ImageDraw
++from utils.figures import fill_intervals, flood_fill_cv, draw_ellipse
++from utils.algs import is_child_of
++from PIL import Image, ImageTk, ImageDraw
+ 
+ 
+ class BaseTool:
+@@ -92,13 +93,21 @@
+         if not self.renderer:
+             return
+         self.last_x, self.last_y = self.canvas2pixel((event.x, event.y))
+-        self.draw_brush(self.last_x, self.last_y)
+-        self.renderer.render()
++        width, height = self.renderer.img.size
++        if (0 <= self.last_x < width) and (0 <= self.last_y < height):
++            self.draw_brush(self.last_x, self.last_y)
++            self.renderer.render()
+ 
+     def on_drag(self, event):
+         if not self.renderer:
+             return
+-        self.points.append(self.canvas2pixel((event.x, event.y)))
++        x, y = self.canvas2pixel((event.x, event.y))
++        width, height = self.renderer.img.size
++        if not ((0 <= x < width) and (0 <= y < height)):
++            return
++
++        self.points.append((x, y))
++
+         if len(self.points) > self.stabilization:
+             self.points.pop(0)
+ 
+@@ -113,7 +122,12 @@
+     def on_release(self, event):
+         if not self.renderer:
+             return
+-        self.connect_points((self.last_x, self.last_y), self.canvas2pixel((event.x, event.y)))
++        x, y = self.canvas2pixel((event.x, event.y))
++        width, height = self.renderer.img.size
++        if not ((0 <= x < width) and (0 <= y < height)):
++            return
++
++        self.connect_points((self.last_x, self.last_y), (x, y))
+         self.renderer.render()
+         self.last_x, self.last_y = None, None
+         self.points.clear()
+@@ -286,4 +300,330 @@
+             t = i / steps
+             x = int(x1 + (x2 - x1) * t)
+             y = int(y1 + (y2 - y1) * t)
+-            self.draw_brush(x, y)
+\ No newline at end of file
++            self.draw_brush(x, y)
++
++
++
++# class CenterChooserTool(BaseTool):
++#     subscriptions = {"use_zone_changed": "on_use_zone_changed"}
++#     binds = {"<ButtonPress-1>": "change_center", "<B1-Motion>": "change_center", "<ButtonRelease-1>": "add_center"}
++#     use_zones = ["editor"]
++#
++#     def __init__(self, _event_bus):
++#         super().__init__(_event_bus)
++#         self.renderer = None
++#         self.centers = {}
++#         self.current_center_color = None
++#
++#     def on_use_zone_changed(self, _use_zone):
++#         if not _use_zone:
++#             return
++#         self.renderer = _use_zone
++#
++#     def change_center(self, event):
++#         if self.renderer and self.renderer.img:
++#             x, y = self.canvas2pixel((event.x, event.y))
++#             width, height = self.renderer.img.size
++#             if (0 <= x < width) and (0 <= y <= height):
++#                 r, g, b, a = self.renderer.img.getpixel((x, y))
++#                 self.current_center_color = rgb2hex((r, g, b))
++#                 self.event_bus.send_state("color_modify",  self.current_center_color)
++#
++#     def add_center(self, event):
++#         if self.renderer and self.renderer.img:
++#             x, y = self.canvas2pixel((event.x, event.y))
++#             width, height = self.renderer.img.size
++#             if (0 <= x < width) and (0 <= y <= height):
++#                 r, g, b, a = self.renderer.img.getpixel((x, y))
++#                 self.current_center_color = rgb2hex((r, g, b))
++#                 self.event_bus.send_state("color_modify", self.current_center_color)
++#
++#                 if self.current_center_color not in self.centers:
++#                     self.centers[self.current_center_color] = x, y
++#                     self.event_bus.send_state("center_added", self.current_center_color)
++#
++#     def canvas2pixel(self, _pos):
++#         x = self.renderer.canvas.canvasx(_pos[0])
++#         y = self.renderer.canvas.canvasy(_pos[1])
++#
++#         return int(x / self.renderer.scale), int(y / self.renderer.scale)
++#
++#     def draw_pointer(self):
++#
++#
++#     def render_pointers(self):
++
++#
++# class CenterChooserTool(BaseTool):
++#     subscriptions = {
++#         "use_zone_changed": "on_use_zone_changed"
++#     }
++#     binds = {
++#         "<ButtonPress-1>": "on_click",
++#         "<B1-Motion>": "on_drag",
++#         "<ButtonRelease-1>": "on_release"
++#     }
++#     use_zones = ["editor"]
++#
++#     def __init__(self, _event_bus):
++#         super().__init__(_event_bus)
++#         self.renderer = None
++#         self.centers = {}  # color -> (x, y)
++#         self.center_widgets = {}  # color -> canvas image ID
++#         self.current_center_color = None
++#         self.dragging_color = None
++#
++#         self.pointer_radius = 6
++#         self.pointer_border = 2
++#
++#     def activate(self, **kwargs):
++#         self.init_subscribes()
++#         if self.renderer:
++#             self.render_pointers()
++#
++#     def deactivate(self):
++#         for event, callback in self.subscriptions.items():
++#             self.event_bus.unsubscribe(event, callback)
++#         if self.renderer:
++#             self.clear_pointers()
++#
++#     def on_use_zone_changed(self, _use_zone):
++#         if not _use_zone:
++#             return
++#         self.renderer = _use_zone
++#
++#     def on_click(self, event):
++#         if not self.renderer or not self.renderer.img:
++#             return
++#         canvas_x = self.renderer.canvas.canvasx(event.x)
++#         canvas_y = self.renderer.canvas.canvasy(event.y)
++#
++#         # Проверка, не кликнули ли по уже существующему кружку
++#         for color, (x, y) in self.centers.items():
++#             cx = x * self.renderer.scale
++#             cy = y * self.renderer.scale
++#             if abs(canvas_x - cx) <= self.pointer_radius and abs(canvas_y - cy) <= self.pointer_radius:
++#                 self.dragging_color = color
++#                 return
++#
++#         # Если не по кружку, устанавливаем новый центр
++#         x, y = self.canvas2pixel((event.x, event.y))
++#         if 0 <= x < self.renderer.img.width and 0 <= y < self.renderer.img.height:
++#             r, g, b, a = self.renderer.img.getpixel((x, y))
++#             self.current_center_color = rgb2hex((r, g, b))
++#             self.event_bus.send_state("color_modify", self.current_center_color)
++#
++#     def on_drag(self, event):
++#         if self.renderer and self.dragging_color:
++#             x, y = self.canvas2pixel((event.x, event.y))
++#             self.centers[self.dragging_color] = (x, y)
++#             self.render_pointers()
++#
++#     def on_release(self, event):
++#         if self.dragging_color:
++#             self.event_bus.send_state("center_added", self.dragging_color)
++#         self.dragging_color = None
++#
++#     def canvas2pixel(self, _pos):
++#         x = self.renderer.canvas.canvasx(_pos[0])
++#         y = self.renderer.canvas.canvasy(_pos[1])
++#         return int(x / self.renderer.scale), int(y / self.renderer.scale)
++#
++#     def draw_pointer(self, color):
++#         img_size = self.pointer_radius * 2
++#         pointer_img = Image.new("RGBA", (img_size, img_size), (0, 0, 0, 0))
++#
++#         circle = draw_ellipse(
++#             pointer_img,
++#             [
++#                 self.pointer_border,
++#                 self.pointer_border,
++#                 img_size - self.pointer_border,
++#                 img_size - self.pointer_border
++#             ],
++#             width=self.pointer_border,
++#             fillcolor=color,
++#             outlinecolor="#ffffffff"
++#         )
++#         return ImageTk.PhotoImage(circle)
++#
++#     def render_pointers(self):
++#         if not self.renderer:
++#             return
++#
++#         canvas = self.renderer.canvas
++#
++#         # Удаляем старые
++#         self.clear_pointers()
++#
++#         print("render")
++#
++#         for color, (x, y) in self.centers.items():
++#             px = int(x * self.renderer.scale)
++#             py = int(y * self.renderer.scale)
++#
++#             pointer_img = self.draw_pointer(color)
++#             img_id = canvas.create_image(px, py, anchor="center", image=pointer_img)
++#             print(f'"id": {img_id}, "image": {pointer_img}')
++#             self.center_widgets[color] = {"id": img_id, "image": pointer_img}
++#
++#     def clear_pointers(self):
++#         if self.renderer:
++#             canvas = self.renderer.canvas
++#             for widget in self.center_widgets.values():
++#                 canvas.delete(widget["id"])
++#             self.center_widgets.clear()
++
++
++class CenterChooserTool(BaseTool):
++    subscriptions = {
++        "use_zone_changed": "on_use_zone_changed",
++        "canvas_rendered": "render_pointers"
++    }
++    binds = {
++        "<ButtonPress-1>": "on_click",
++        "<B1-Motion>": "on_drag",
++        "<ButtonRelease-1>": "on_release"
++    }
++    use_zones = ["editor"]
++
++    def __init__(self, _event_bus):
++        super().__init__(_event_bus)
++        self.renderer = None
++        self.centers = {}  # color -> (x, y)
++        self.center_widgets = {}  # color -> {"id": canvas_id, "image": PhotoImage}
++        self.current_center_color = None
++        self.dragging_color = None
++        self.pointer_radius = 6
++        self.pointer_border = 2
++
++    def activate(self, **kwargs):
++        self.init_subscribes()
++        if self.renderer:
++            self.render_pointers()
++
++    def deactivate(self):
++        for event, callback in self.subscriptions.items():
++            self.event_bus.unsubscribe(event, callback)
++        if self.renderer:
++            self.clear_pointers()
++
++    def on_use_zone_changed(self, _use_zone):
++        if not _use_zone:
++            self.renderer = None
++            return
++        self.renderer = _use_zone
++        self.render_pointers()
++
++    def on_click(self, event):
++        if not self.renderer or not self.renderer.img:
++            return
++
++        x, y = self.canvas2pixel((event.x, event.y))
++        width, height = self.renderer.img.size
++
++        for color, (cx, cy) in self.centers.items():
++            dx = x - cx
++            dy = y - cy
++            if dx * dx + dy * dy <= self.pointer_radius * self.pointer_radius:
++                self.dragging_color = color
++                return
++
++        if (0 <= x < width) and (0 <= y < height):
++            r, g, b, a = self.renderer.img.getpixel((x, y))
++            self.current_center_color = rgb2hex((r, g, b))
++            self.event_bus.send_state("color_modify", self.current_center_color)
++
++    def on_drag(self, event):
++        if not self.dragging_color or not self.renderer:
++            return
++
++        x, y = self.canvas2pixel((event.x, event.y))
++        width, height = self.renderer.img.size
++
++        if (0 <= x < width) and (0 <= y < height):
++            # self.centers[self.dragging_color] = (x, y)
++            r, g, b, a = self.renderer.img.getpixel((x, y))
++            self.current_center_color = rgb2hex((r, g, b))
++            self.event_bus.send_state("color_modify", self.current_center_color)
++            pointer_img = self.draw_pointer(self.current_center_color)
++            img_id = self.renderer.canvas.create_image(
++                x, y,
++                anchor="center",
++                image=pointer_img,
++                tags=("center_pointer", f"pointer_{self.current_center_color}")
++            )
++            # self.render_pointers()
++
++    def on_release(self, event):
++        if not self.dragging_color:
++            if self.current_center_color and self.current_center_color not in self.centers:
++                x, y = self.canvas2pixel((event.x, event.y))
++                width, height = self.renderer.img.size
++
++                if (0 <= x < width) and (0 <= y < height):
++                    self.centers[self.current_center_color] = (x, y)
++                    self.event_bus.send_state("center_added", self.current_center_color)
++                    self.render_pointers()
++
++        self.dragging_color = None
++        self.current_center_color = None
++
++    def canvas2pixel(self, pos):
++        if not self.renderer:
++            return (0, 0)
++
++        x = self.renderer.canvas.canvasx(pos[0])
++        y = self.renderer.canvas.canvasy(pos[1])
++        return int(x / self.renderer.scale), int(y / self.renderer.scale)
++
++    def draw_pointer(self, color):
++        img_size = self.pointer_radius * 2
++        pointer_img = Image.new("RGBA", (img_size, img_size), (0, 0, 0, 0))
++
++        circle = draw_ellipse(
++            pointer_img,
++            [
++                self.pointer_border,
++                self.pointer_border,
++                img_size - self.pointer_border,
++                img_size - self.pointer_border
++            ],
++            width=self.pointer_border,
++            fillcolor=color,
++            outlinecolor="#ffffffff"
++        )
++        return ImageTk.PhotoImage(circle)
++
++    def render_pointers(self, _renderer=None):
++        if not self.renderer:
++            return
++        if _renderer:
++            if not is_child_of(_renderer, self.renderer):
++                return
++
++        self.clear_pointers()
++
++        for color, (x, y) in self.centers.items():
++            canvas_x = x * self.renderer.scale
++            canvas_y = y * self.renderer.scale
++
++            pointer_img = self.draw_pointer(color)
++            img_id = self.renderer.canvas.create_image(
++                canvas_x, canvas_y,
++                anchor="center",
++                image=pointer_img,
++                tags=("center_pointer", f"pointer_{color}")
++            )
++
++            # Сохраняем ссылки на созданные объекты
++            self.center_widgets[color] = {
++                "id": img_id,
++                "image": pointer_img
++            }
++
++    def clear_pointers(self):
++        if self.renderer:
++            for widget in self.center_widgets.values():
++                self.renderer.canvas.delete(widget["id"])
++            self.center_widgets.clear()
+\ No newline at end of file
+diff --git a/widgets/pallet_clusters_frame.py b/widgets/pallet_clusters_frame.py
+deleted file mode 100644

@@ -16,6 +16,7 @@ class PalletRadioButtonFrame(CustomRadioButtonFrame):
         if not _color:
             return
         if _color not in self.buttons:
+
             button = PalletRadioButton(self, self.event_bus, _color, self.variable, _color, _is_last=True)
             self.buttons[_color] = button
 
@@ -25,11 +26,6 @@ class PalletRadioButtonFrame(CustomRadioButtonFrame):
             self.columns = self.calc_columns()
             self.rows = self.calc_rows()
             self.buttons[_color].grid(row=self.rows - 1, column=(len(self.buttons) - 1) % self.columns, padx=self.object_padx, pady=self.object_pady, sticky="nw")
-            self.update_scrollbar()
 
-    # def delete_color(self, _color):
-    #     if _color in self.buttons:
-    #         self.buttons[_color].destroy()  # Удалить виджет из GUI
-    #         del self.buttons[_color]  # Удалить из словаря
-    #         self.update_frame()
+            self.update_scrollbar()
 

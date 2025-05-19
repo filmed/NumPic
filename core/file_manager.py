@@ -22,14 +22,14 @@ class FileManager:
         _dir = _dir or self.current_file_dir or os.path.expanduser("~")
 
         file_path = filedialog.askopenfilename(title="Select an image", initialdir=_dir, filetypes=self.file_types)
-
         if file_path and os.path.isfile(file_path):
             file_type = os.path.splitext(file_path)[1][1:].lower()
             if file_type in self.valid_types:
                 self.current_file_path = file_path
                 self.current_file_dir = os.path.dirname(file_path)
                 image = Image.open(self.current_file_path)
-                self.event_bus.send_state("file_opened", image)
+                name = os.path.splitext(os.path.basename(file_path))[0]
+                self.event_bus.send_state("file_opened", (image, name))
 
 
     def save_file(self, _is_saving):

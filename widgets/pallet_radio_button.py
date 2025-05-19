@@ -17,8 +17,16 @@ class PalletRadioButton(CustomRadioButton):
         if _is_last:
             self.init_subscribes()
 
+
+
     def on_activate(self, **kwargs):
         self.event_bus.send_state("color_modify", self.color)
 
     def on_right_button(self, event=None):
+
         self.event_bus.send_state("color_deleted", self.color)
+
+    def destroy(self):
+        if hasattr(self, "trace_id") and self.variable:
+            self.variable.trace_remove("write", self.trace_id)
+        super().destroy()

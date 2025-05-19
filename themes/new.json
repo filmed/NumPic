@@ -455,16 +455,18 @@
     }
   },
    "PalletClustersCentersFrame": {
-    "fg_color": "_secondary",
-    "additional_styles": {
+     "fg_color": "_secondary",
+     "height": 100,
+     "additional_styles": {
       "padx": [3, 3],
       "pady": [3, 3]
     }
   },
   "ToolRadioButtonFrame": {
     "fg_color": "_secondary",
+    "height": 40,
     "additional_styles": {
-      "padx": [3, 3],
+      "padx": [4, 4],
       "pady": [3, 3]
     }
   },
@@ -620,6 +622,302 @@
         "font": "Inter-Regular-slnt=0.ttf",
         "font_size": 12
     }
+  },
+
+  "LayerRadioButton": {
+    "corner_radius": 4,
+    "border_width": 1,
+    "border_color": "_borders",
+    "fg_color": "_main",
+    "height": 50,
+    "additional_styles": {
+      "styles_on":
+      {
+          "color": "_secondary",
+          "width": 170,
+          "entry_color": "_main",
+          "selection_color": "#D3822D",
+          "selection_text_color": "#FFFFFF",
+          "entry_border_width": 1,
+          "container_border_width": 0,
+          "entry_padx": [5, 5],
+          "entry_pady": [5, 5],
+          "container_padx": [5, 5],
+          "container_pady": [5, 5],
+          "miniature_indent" : 10,
+          "text_color": "#FFFFFF"
+      },
+
+      "styles_off":
+      {
+          "color": "_main",
+          "width": 170,
+          "entry_color": "_main",
+          "selection_color": "#D3822D",
+          "selection_text_color": "#FFFFFF",
+          "entry_border_width": 1,
+          "container_border_width": 0,
+          "entry_padx": [5, 5],
+          "entry_pady": [5, 5],
+          "container_padx": [5, 5],
+          "container_pady": [5, 5],
+          "miniature_indent" : 10,
+          "text_color": "#FFFFFF"
+      }
+    }
+  },
+
+  "LayerMiniature": {
+    "corner_radius": 0,
+    "border_width": 1,
+    "fg_color": "_main",
+    "border_color": "_third",
+    "additional_styles": {
+      "size": 30
+    }
+  },
+
+  "LayerButtonFrame": {
+    "fg_color": "_secondary",
+    "additional_styles": {
+      "padx": [3, 3],
+      "pady": [3, 3]
+    }
+  },
+
+   "LayerAddButton": {
+    "corner_radius": 0,
+    "fg_color": "transparent",
+    "bg_color": "transparent",
+    "text": "",
+    "additional_styles": {
+      "styles_idle": {
+        "width": 30,
+        "height": 30,
+        "color": "_main",
+        "corner_radius": 3,
+        "border_width": 1,
+        "border_color": "_borders",
+        "text": "",
+        "icon": "plus_icon.png",
+        "icon_color": "_highlight"
+      },
+      "styles_click": {
+        "width": 30,
+        "height": 30,
+        "color": "_third",
+        "corner_radius": 3,
+        "border_width": 0,
+        "border_color": "_third",
+        "text": "",
+        "icon": "plus_icon.png",
+        "icon_color": "_highlight"
+      },
+      "styles_hover": {
+        "width": 30,
+        "height": 30,
+        "color": "_secondary",
+        "corner_radius": 3,
+        "border_width": 1,
+        "border_color": "_borders",
+        "text": "",
+        "icon": "plus_icon.png",
+        "icon_color": "_highlight"
+      }
+    }
+  },
+
+  "LayerDeleteButton": {
+    "corner_radius": 0,
+    "fg_color": "transparent",
+    "bg_color": "transparent",
+    "text": "",
+    "additional_styles": {
+      "styles_idle": {
+        "width": 30,
+        "height": 30,
+        "color": "_main",
+        "corner_radius": 3,
+        "border_width": 1,
+        "border_color": "_borders",
+        "text": "",
+        "icon": "minus_icon.png",
+        "icon_color": "_highlight"
+      },
+      "styles_click": {
+        "width": 30,
+        "height": 30,
+        "color": "_third",
+        "corner_radius": 3,
+        "border_width": 0,
+        "border_color": "_third",
+        "text": "",
+        "icon": "minus_icon.png",
+        "icon_color": "_highlight"
+      },
+      "styles_hover": {
+        "width": 30,
+        "height": 30,
+        "color": "_secondary",
+        "corner_radius": 3,
+        "border_width": 1,
+        "border_color": "_borders",
+        "text": "",
+        "icon": "minus_icon.png",
+        "icon_color": "_highlight"
+      }
+    }
+  },
+
+  "LayerMoveUpButton": {
+    "corner_radius": 0,
+    "fg_color": "transparent",
+    "bg_color": "transparent",
+    "text": "",
+    "additional_styles": {
+      "styles_idle": {
+        "width": 30,
+        "height": 30,
+        "color": "_main",
+        "corner_radius": 3,
+        "border_width": 1,
+        "border_color": "_borders",
+        "text": "",
+        "icon": "up_icon.png",
+        "icon_color": "_highlight"
+      },
+      "styles_click": {
+        "width": 30,
+        "height": 30,
+        "color": "_third",
+        "corner_radius": 3,
+        "border_width": 0,
+        "border_color": "_third",
+        "text": "",
+        "icon": "up_icon.png",
+        "icon_color": "_highlight"
+      },
+      "styles_hover": {
+        "width": 30,
+        "height": 30,
+        "color": "_secondary",
+        "corner_radius": 3,
+        "border_width": 1,
+        "border_color": "_borders",
+        "text": "",
+        "icon": "up_icon.png",
+        "icon_color": "_highlight"
+      }
+    }
+  },
+
+  "LayerMoveDownButton": {
+    "corner_radius": 0,
+    "fg_color": "transparent",
+    "bg_color": "transparent",
+    "text": "",
+    "additional_styles": {
+      "styles_idle": {
+        "width": 30,
+        "height": 30,
+        "color": "_main",
+        "corner_radius": 3,
+        "border_width": 1,
+        "border_color": "_borders",
+        "text": "",
+        "icon": "down_icon.png",
+        "icon_color": "_highlight"
+      },
+      "styles_click": {
+        "width": 30,
+        "height": 30,
+        "color": "_third",
+        "corner_radius": 3,
+        "border_width": 0,
+        "border_color": "_third",
+        "text": "",
+        "icon": "down_icon.png",
+        "icon_color": "_highlight"
+      },
+      "styles_hover": {
+        "width": 30,
+        "height": 30,
+        "color": "_secondary",
+        "corner_radius": 3,
+        "border_width": 1,
+        "border_color": "_borders",
+        "text": "",
+        "icon": "down_icon.png",
+        "icon_color": "_highlight"
+      }
+    }
+  },
+
+  "LayersRenderer": {
+    "corner_radius": 5,
+    "border_width": 0,
+    "fg_color": "transparent",
+    "bg_color": "transparent",
+    "border_color": ["_accent", "gray28"],
+     "additional_styles": {
+       "canvas_bg": "_canvases",
+       "out_border_color": "_third",
+       "out_border_width": 1,
+       "mid_border_color": "_accent",
+       "mid_border_width": 4,
+       "inner_border_color": "_borders",
+       "inner_border_width": 1
+     }
+  },
+
+"CustomSlider": {
+   "additional_styles": {
+     "width": 240,
+      "height": 25,
+      "border_width": 1,
+      "border_color": "_borders",
+      "pointer_radius": 8,
+      "pointer_border": 3,
+      "pointer_color": "_borders",
+      "pointer_border_color": "_accent",
+      "bar_color": "_borders",
+      "bg_color": "_secondary"
+   }
+},
+
+  "CustomCheckBox": {
+    "corner_radius": 0,
+    "fg_color": "transparent",
+    "text": "",
+    "additional_styles": {
+      "styles_on": {
+       "size": 30,
+        "color": "_transparent",
+        "border_color": "_highlight",
+        "inner_border_color": "_borders",
+        "border_width": 1,
+        "inner_border_width": 2,
+        "corner_radius": 4,
+        "icon": "dot_icon.png",
+        "icon_color": "_highlight"
+       },
+      "styles_off": {
+        "size": 30,
+        "color": "_transparent",
+        "border_color": "_transparent",
+        "border_width": 1,
+        "inner_border_width": 0,
+        "corner_radius": 4
+      }
+    }
+  },
+
+  "ToolSettingsFrame": {
+    "corner_radius": 0,
+    "border_width": 0,
+    "fg_color": "_main",
+    "border_color": "_third",
+    "height": 35
   },
 
   "App": {

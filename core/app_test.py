@@ -8,8 +8,9 @@ from core.tool_manager import ToolManager
 from core.file_manager import FileManager
 from core.focus_manager import FocusManager
 from core.models.tools import HandTool, BrushTool, PipetteTool, FillTool, EraseTool, CenterChooserTool
-from core.models.filters import Blur
+# from core.models.filters import Blur
 from core.cluster_manager import ClusterManager
+from core.layer_manager import LayerManager
 
 from widgets.base import BaseWidget
 from widgets.custom_panel import CustomPanel
@@ -22,12 +23,21 @@ from widgets.pallet_sliders_frame import PalletSlidersFrame
 from widgets.pallet_display_frame import PalletDisplayFrame
 from widgets.pallet_add_button import PalletAddButton
 from widgets.image_renderer import ImageRenderer
+from widgets.layers_renderer import LayersRenderer
 from widgets.tool_radio_button_frame import ToolRadioButtonFrame
+from widgets.tool_settings_frame import ToolSettingsFrame
 from widgets.blur_slider import BlurSlider
 from widgets.pallet_clusters_centers_frame import PalletClustersCentersFrame
 from widgets.count_clusters_entry import CountClustersEntry
 from widgets.cluster_button import ClusterButton
 from widgets.custom_label import CustomLabel
+from widgets.layer_button_frame import LayerButtonFrame
+from widgets.layer_add_button import LayerAddButton
+from widgets.layer_delete_button import LayerDeleteButton
+from widgets.layer_moveup_button import LayerMoveUpButton
+from widgets.layer_movedown_button import LayerMoveDownButton
+
+
 
 
 # Monitor scale factor
@@ -47,6 +57,8 @@ class App(BaseWidget, ctk.CTk):
         self.theme_manager.change_theme("new")
         self.focus_manager = FocusManager(self, self.event_bus)
 
+        self.layer_manager = LayerManager(self.event_bus)
+
         self.tool_manager = ToolManager(self.event_bus)
         self.tools = {
                         "hand_tool": HandTool(_event_bus=self.event_bus),
@@ -60,7 +72,7 @@ class App(BaseWidget, ctk.CTk):
         for name, tool in self.tools.items():
             self.tool_manager.add_tool(_name=name, _tool=tool)
 
-        self.blur = Blur(self.event_bus, _is_last=True)
+        # self.blur = Blur(self.event_bus, _is_last=True)
 
         BaseWidget.__init__(self, _event_bus=self.event_bus)
         #   ---------------------------------------setup a window------------------------------------------------------
@@ -89,6 +101,10 @@ class App(BaseWidget, ctk.CTk):
         self.tp_file_save_button = FileSaveButton(self.top_panel, self.event_bus, _is_last=True)
         self.tp_file_save_button.grid(row=0, column=1, padx=(5, 0), pady=(5, 5), sticky='w')
 
+        self.tool_settings_frame = ToolSettingsFrame(self, self.event_bus, _is_last=True)
+        self.tool_settings_frame.grid(row=0, column=1, padx=(0, 0), pady=(0, 0), sticky='ew')
+
+
         # LEFT panel setup
         self.left_panel = CustomPanel(self, self.event_bus, _is_last=True)
         self.left_panel.grid(row=1, column=0, sticky='nswe')
@@ -96,6 +112,7 @@ class App(BaseWidget, ctk.CTk):
         self.left_panel.grid_rowconfigure(0, weight=0)
         self.left_panel.grid_rowconfigure(1, weight=0)
         self.left_panel.grid_rowconfigure(2, weight=0)
+        self.left_panel.grid_rowconfigure(3, weight=0)
         self.left_panel.grid_columnconfigure(0, weight=1)
 
         self.left_panel.grid_columnconfigure(0, minsize=280)
@@ -138,7 +155,7 @@ class App(BaseWidget, ctk.CTk):
 
         # MAIN ZONE
 
-        self.editor_use_zone = ImageRenderer(self, self.event_bus, _is_last=True)
+        self.editor_use_zone = LayersRenderer(self, self.event_bus, self.layer_manager, _is_last=True)
         self.editor_use_zone.grid(row=1, column=1, sticky="nswe")
         self.tool_manager.add_use_zone("editor", self.editor_use_zone)
 
@@ -150,12 +167,13 @@ class App(BaseWidget, ctk.CTk):
         self.right_panel.grid_rowconfigure(0, weight=0)
         self.right_panel.grid_rowconfigure(1, weight=0)
         self.right_panel.grid_rowconfigure(2, weight=0)
+        self.right_panel.grid_rowconfigure(3, weight=0)
         self.right_panel.grid_columnconfigure(0, weight=1)
 
         #   панель инструментов
         self.rp_tool_radio_button_frame = ToolRadioButtonFrame(self.right_panel, self.event_bus, _is_last=True)
-        self.rp_tool_radio_button_frame.grid(row=0, column=0, padx=(10, 10), pady=(10, 0), sticky="nsew")
-        self.right_panel.grid_rowconfigure(0, minsize=200)
+        self.rp_tool_radio_button_frame.grid(row=0, column=0, padx=(10, 10), pady=(10, 0), sticky="new")
+        self.right_panel.grid_rowconfigure(0, minsize=30)
 
         #   add tools to the tool_panel
         for _tool_name in self.tools:
@@ -163,10 +181,10 @@ class App(BaseWidget, ctk.CTk):
 
         # панель параметров кластеризации
         self.rp_clustering_frame = ContainerPanel(self.right_panel, self.event_bus, _is_last=True)
-        self.rp_clustering_frame.grid(row=1, column=0, padx=(10, 10), pady=(30, 0), sticky="nsew")
+        self.rp_clustering_frame.grid(row=1, column=0, padx=(10, 10), pady=(5, 0), sticky="nsew")
 
         self.rp_blur_label = CustomLabel(self.rp_clustering_frame, self.event_bus, _text="Размытие", _is_last=True)
-        self.rp_blur_label.grid(row=0, column=0, padx=(0, 0), pady=(30, 0), sticky="w")
+        self.rp_blur_label.grid(row=0, column=0, padx=(0, 0), pady=(15, 0), sticky="w")
 
         self.rp_blur_slider = BlurSlider(self.rp_clustering_frame, self.event_bus, _is_last=True)
         self.rp_blur_slider.grid(row=1, column=0, padx=(0, 0), pady=(5, 0), sticky="")
@@ -182,7 +200,7 @@ class App(BaseWidget, ctk.CTk):
 
         self.rp_pallet_clusters_centers_frame = PalletClustersCentersFrame(self.rp_clustering_frame, self.event_bus, _is_last=True)
         self.rp_pallet_clusters_centers_frame.grid(row=3, column=0, padx=(0, 0), pady=(10, 0), sticky="nsew")
-        self.rp_clustering_frame.grid_rowconfigure(3, minsize=200)
+        # self.rp_clustering_frame.grid_rowconfigure(3, minsize=30)
 
         self.rp_cluster_button = ClusterButton(self.rp_clustering_frame, self.event_bus, _is_last=True)
         self.rp_cluster_button.grid(row=4, column=0, padx=(5, 0), pady=(5, 0), sticky='e')
@@ -196,9 +214,32 @@ class App(BaseWidget, ctk.CTk):
         #     count_entry=self.rp_count_clusters_entry
         # )
 
+        # LAYERS ZONE
+        self.rp_layers_container = ContainerPanel(self.right_panel, self.event_bus, _is_last=True)
+        self.rp_layers_container.grid(row=2, column=0, padx=(10, 10), pady=(10, 0), sticky="nsew")
+        self.rp_layers_container.grid_columnconfigure(0, weight=1)
+
+        self.rp_layers_frame = LayerButtonFrame(self.rp_layers_container, self.event_bus, _is_last=True)
+        self.rp_layers_frame.grid(row=0, column=0, padx=(0, 0), pady=(0, 0), sticky="nsew")
+        self.rp_layers_container.grid_rowconfigure(0, minsize=100)
+
+        self.rp_layers_buttons_container = ContainerPanel(self.rp_layers_container, self.event_bus, _is_last=True)
+        self.rp_layers_buttons_container.grid(row=1, column=0, padx=(0, 0), pady=(5, 0), sticky="nwe")
+        self.rp_layers_buttons_container.grid_columnconfigure((0, 1, 2, 3), weight=1)
+
+        self.rp_layer_add = LayerAddButton(self.rp_layers_buttons_container, self.event_bus, _is_last=True)
+        self.rp_layer_add.grid(row=0, column=0, padx=(0, 0), pady=(0, 0), sticky="nsew")
+        self.rp_layer_delete = LayerDeleteButton(self.rp_layers_buttons_container, self.event_bus, _is_last=True)
+        self.rp_layer_delete.grid(row=0, column=1, padx=(0, 0), pady=(0, 0), sticky="nsew")
+        self.rp_layer_moveup = LayerMoveUpButton(self.rp_layers_buttons_container, self.event_bus, _is_last=True)
+        self.rp_layer_moveup.grid(row=0, column=2, padx=(0, 0), pady=(0, 0), sticky="nsew")
+        self.rp_layer_movedown = LayerMoveDownButton(self.rp_layers_buttons_container, self.event_bus, _is_last=True)
+        self.rp_layer_movedown.grid(row=0, column=3, padx=(0, 0), pady=(0, 0), sticky="nsew")
+
+
         # RENDER ZONE
         self.render_use_zone = ImageRenderer(self.right_panel, self.event_bus, _is_last=True, width=240, height=240)
-        self.render_use_zone.grid(row=2, column=0, padx=(10, 10), pady=(10, 0), sticky="")
+        self.render_use_zone.grid(row=3, column=0, padx=(10, 10), pady=(10, 0), sticky="")
         self.tool_manager.add_use_zone("render", self.render_use_zone)
         self.cluster_manager = ClusterManager(self.event_bus, self.editor_use_zone, self.render_use_zone, self.rp_pallet_clusters_centers_frame, self.rp_count_clusters_entry)
 

@@ -25,6 +25,7 @@ class ToolManager:
             self.current_tool = self.tools[_tool_name]
             self.current_tool.activate()
             self.bind_tool(self.current_tool)
+            self.event_bus.send_state("tool_settings_changed", self.current_tool)
 
     def bind_tool(self, _tool):
         for zone in _tool.use_zones:

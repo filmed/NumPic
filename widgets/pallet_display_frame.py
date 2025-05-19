@@ -38,15 +38,15 @@ class HexEntry(BaseWidget, ctk.CTkEntry):
 
     def lock_entry(self):
         self.is_focused = False
-        self.master.focus_set()  # Просто уводим фокус
+        self.master.focus_set()
 
 
     def unlock_entry(self):
         if not self.is_focused:
             self.is_focused = True
-            self.configure(state="normal")  # Возвращаем нормальный режим
-            self.focus_set()  # Устанавливаем фокус
-            self.icursor("end")  # Курсор в конец текста
+            self.configure(state="normal")
+            self.focus_set()
+            self.icursor("end")
 
     def handle_paste(self, event):
         if self.is_focused:

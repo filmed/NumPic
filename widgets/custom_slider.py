@@ -5,14 +5,20 @@ from utils.figures import draw_ellipse
 from PIL import Image, ImageTk
 
 
-class BlurSlider(BaseWidget, ctk.CTkCanvas):
+class CustomSlider(BaseWidget, ctk.CTkCanvas):
     binds = {"<Button-1>": "on_click", "<B1-Motion>": "on_drag"}
 
-    def __init__(self, master, _event_bus, _is_last=False, **kwargs):
+    def __init__(self, master, _event_bus, _is_last=False, from_=0, to=100, step=1, command=None, **kwargs):
         ctk.CTkCanvas.__init__(self, master=master, height=20, **kwargs)
         BaseWidget.__init__(self, _event_bus=_event_bus)
 
-        self.pointer_pos = 0
+        self.from_ = from_
+        self.to = to
+        self.step = step
+        self.command = command
+        self.value = self.from_
+        self.pointer_pos = 0 #0-1
+
         self.build_view()
 
         if _is_last:
@@ -44,7 +50,6 @@ class BlurSlider(BaseWidget, ctk.CTkCanvas):
         self._prepare_pointer_image()
         self.update_slider()
 
-
     def _draw_static_bar(self):
         bar_image = Image.new("RGB", (self.width, self.height), color=hex2rgb(self.bar_color))
         self._bar_img_ref = ImageTk.PhotoImage(bar_image)
@@ -70,27 +75,37 @@ class BlurSlider(BaseWidget, ctk.CTkCanvas):
 
     def update_slider(self):
         self.delete("all")
-
-        fill_width = int(self.pointer_pos / 255 * self.width)
+        fill_width = int(self.pointer_pos * self.width)
         fill_width = max(0, min(fill_width, self.width))
         bar_image = self._build_bar_image(fill_width)
         self._bar_img_ref = bar_image
         self.create_image((self.border_width, self.border_width), anchor="nw", image=self._bar_img_ref)
 
-        # Указатель
         pos_x = max(self.pointer_radius, min(fill_width, self.width - self.pointer_radius))
         pos_y = self.height // 2 - self.pointer_radius + self.border_width
         self.create_image(pos_x - self.pointer_radius, pos_y, anchor="nw", image=self._pointer_img_ref)
 
     def on_click(self, event):
         width = self.winfo_width() or 256
-        self.pointer_pos = int(min(max(event.x, 0), width - 1) / (width - 1) * 255)
+        rel = min(max(event.x, 0), width - 1) / (width - 1)
+        self.pointer_pos = rel
+
+        raw_value = self.from_ + (self.to - self.from_) * rel
+        stepped = round(raw_value / self.step) * self.step
+        stepped = min(max(self.from_, stepped), self.to)
+
+        self.value = stepped
         self.update_slider()
-        self.change_blur()
+
+        if self.command:
+            self.command(self.value)
 
     def on_drag(self, event):
         self.on_click(event)
 
-    def change_blur(self):
-        value = max(0, int(self.pointer_pos / 10))
-        self.event_bus.send_state("update_filter", {"blur": value})
+    def set(self, value: float):
+        value = min(max(value, self.from_), self.to)
+        self.value = value
+        rel = (value - self.from_) / (self.to - self.from_)
+        self.pointer_pos = rel
+        self.update_slider()

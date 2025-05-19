@@ -7,34 +7,16 @@ import copy
 from utils.color_models import hex2rgb
 
 
-# additional_styles: {
-#   styles_on: {
-#       !size
-#       color
-#       border_color
-#       inner_border_color
-#       border_width
-#       inner_border_width
-#       corner_radius
-#       icon_resizable
-#       icon
-#       icon_color
-#   }
-#  styles_off: {<--->}
-# }
-
-
-class CustomRadioButton(BaseWidget, ctk.CTkLabel):
-
+class CustomCheckBox(BaseWidget, ctk.CTkLabel):
     binds = {**BaseWidget.binds, "<ButtonPress-1>": "on_click"}
 
-    def __init__(self, master, _event_bus, _variable, _value, _is_last=False, **kwargs):
+    def __init__(self, master, _event_bus, _is_last=False, command=None, **kwargs):
         ctk.CTkLabel.__init__(self, master=master, **kwargs)
         BaseWidget.__init__(self, _event_bus=_event_bus)
 
-        self.variable = _variable
-        self.value = _value
-        self.size = None
+        self.command = command
+        self.state = False
+
         self.styles_on = copy.deepcopy(self.additional_styles.get('styles_on', {'color': '#AAAAAA', 'size': 30}))
         self.styles_off = copy.deepcopy(self.additional_styles.get('styles_off', {'color': '#555555', 'size': 30}))
 
@@ -46,18 +28,17 @@ class CustomRadioButton(BaseWidget, ctk.CTkLabel):
 
         self.configure(image=self.image_off)
 
-        if self.variable:
-            self.trace_id = self.variable.trace_add("write", lambda *args: self.update_button())
-
         if _is_last:
             self.init_subscribes()
 
     def on_click(self, event=None):
-        if self.variable:
-            self.variable.set(self.value)
+        self.state = not self.state
+        self.update_button()
+        if self.command:
+            self.command(self.state)
 
     def update_button(self):
-        if self.variable and self.variable.get() == self.value:
+        if self.state:
             self.configure(image=self.image_on)
             self.on_activate()
         else:
@@ -69,6 +50,15 @@ class CustomRadioButton(BaseWidget, ctk.CTkLabel):
 
     def on_deactivate(self, **kwargs):
         pass
+
+    def get(self):
+        return self.state
+
+    def set(self, value: bool):
+        self.state = bool(value)
+        self.update_button()
+        if self.command:
+            self.command(self.state)
 
     def build_icon(self, _styles, **kwargs):
         icon = None
@@ -105,7 +95,6 @@ class CustomRadioButton(BaseWidget, ctk.CTkLabel):
             fill=color
         )
 
-        # Внутренний бордер
         offset = border_width * 2
         draw.rounded_rectangle(
             (offset, offset, img_size - 1 - offset, img_size - 1 - offset),
@@ -145,4 +134,3 @@ class CustomRadioButton(BaseWidget, ctk.CTkLabel):
                 img.paste(_icon, position)
 
         return ctk.CTkImage(img, size=(size, size))
-

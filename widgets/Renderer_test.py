@@ -3,14 +3,16 @@ from widgets.base import BaseWidget
 from widgets.auto_scroll_bar import AutoScrollbar
 from PIL import Image, ImageDraw, ImageTk
 import math
+# from core.models.filters import apply_filters
+from core.layer_manager import LayerManager
 
 
-class ImageRenderer(BaseWidget, ctk.CTkFrame):
+class LayersRenderer(BaseWidget, ctk.CTkFrame):
 
-    subscriptions = {"file_opened": "set_image"}
+    subscriptions = {"layer_inited": "on_layer_inited", "layer_selected": "on_layer_changed"}
     binds = {**BaseWidget.binds}
 
-    def __init__(self, master, _event_bus, _zoom_delta=5, _is_last=False, fixed_size=None, **kwargs):
+    def __init__(self, master, _event_bus, _layer_manager:LayerManager, _zoom_delta=5, _is_last=False, fixed_size=None, **kwargs):
         self.fixed_width = kwargs.pop("width", 0)
         self.fixed_height = kwargs.pop("height", 0)
 
@@ -58,10 +60,12 @@ class ImageRenderer(BaseWidget, ctk.CTkFrame):
         self.canvas.bind('<Enter>', self.on_enter)
 
         # Init start fields
+        self.layer_manager = _layer_manager
+        self.cache_before = None
+        self.cache_after = None
+        self.current_layer = None
+        self.composited_img = None
 
-        self.original_img = None
-        self.base_img = None
-        self.img = None  # img to render
         self.draw = None
         self.base_width, self.base_height = None, None
         self.scaled_width, self.scaled_height = None, None
@@ -97,50 +101,43 @@ class ImageRenderer(BaseWidget, ctk.CTkFrame):
     def on_enter(self, event=None):
         self.event_bus.send_state('use_zone_changed', self)
 
-    # Set an _img to ImageCanvas
-    def set_image(self, _data=None):
-        try:
-            if _data is None:
-                return
-            _img, _name = _data
-            if _img is not None:
-                self.original_img = _img
-                self.base_img = _img
-                self.img = self.base_img.convert('RGBA')
-                self.draw = ImageDraw.Draw(self.img)
-                self.base_width, self.base_height = self.img.size
-                self.scaled_width, self.scaled_height = round(self.scale * self.base_width - 1), round(self.scale * self.base_height - 1)
 
-                imagetk = ImageTk.PhotoImage(self.img)
-                imageid = self.canvas.create_image((0, 0), anchor='nw', image=imagetk, tag="img")
-                self.canvas.tag_lower(imageid)
-                self.canvas.imagetk = imagetk
+    def on_layer_inited(self, _layer=None):
+        if _layer is None:
+            return
+        self.current_layer = _layer
+        self.update_cache()
+        self.draw = ImageDraw.Draw(self.current_layer.img)
+        self.base_width, self.base_height = self.current_layer.img.size
+        self.scaled_width, self.scaled_height = round(self.scale * self.base_width - 1), round(self.scale * self.base_height - 1)
+        imagetk = ImageTk.PhotoImage(self.current_layer.img)
+        imageid = self.canvas.create_image((0, 0), anchor='nw', image=imagetk, tag="img")
+        self.canvas.tag_lower(imageid)
+        self.canvas.imagetk = imagetk
 
-                canvas_box = (self.canvas.canvasx(0),
-                              self.canvas.canvasy(0),
-                              self.canvas.canvasx(self.canvas.winfo_width()),
-                              self.canvas.canvasy(self.canvas.winfo_height()))
+        canvas_box = (self.canvas.canvasx(0),
+                      self.canvas.canvasy(0),
+                      self.canvas.canvasx(self.canvas.winfo_width()),
+                      self.canvas.canvasy(self.canvas.winfo_height()))
 
-                canvas_center = (canvas_box[0] + canvas_box[2]) / 2, (canvas_box[1] + canvas_box[3]) / 2
+        canvas_center = (canvas_box[0] + canvas_box[2]) / 2, (canvas_box[1] + canvas_box[3]) / 2
 
-                self.maximize_image()
+        self.maximize_image()
 
-                image_center = self.scaled_width / 2, self.scaled_height / 2
-                center_vec = int(canvas_center[0] - image_center[0]), int(canvas_center[1] - image_center[1])
+        image_center = self.scaled_width / 2, self.scaled_height / 2
+        center_vec = int(canvas_center[0] - image_center[0]), int(canvas_center[1] - image_center[1])
 
-                self.canvas.xview_scroll(-center_vec[0], ctk.UNITS)
-                self.canvas.yview_scroll(-center_vec[1], ctk.UNITS)
+        self.canvas.xview_scroll(-center_vec[0], ctk.UNITS)
+        self.canvas.yview_scroll(-center_vec[1], ctk.UNITS)
 
-                # red square at 0 0
-                start = Image.new('RGB', (10, 10), (255, 0, 0))
-                imagetk1 = ImageTk.PhotoImage(start)
-                imageid1 = self.canvas.create_image((0, 0), anchor='nw', image=imagetk1, tag="img1")
-                self.canvas.tag_raise(imageid1)
-                self.canvas.imagetk1 = imagetk1
+        # red square at 0 0
+        start = Image.new('RGB', (10, 10), (255, 0, 0))
+        imagetk1 = ImageTk.PhotoImage(start)
+        imageid1 = self.canvas.create_image((0, 0), anchor='nw', image=imagetk1, tag="img1")
+        self.canvas.tag_raise(imageid1)
+        self.canvas.imagetk1 = imagetk1
+        self.canvas.update()
 
-                self.canvas.update()
-        except Exception as ex:
-            print(ex)
 
     def maximize_image(self):
         canvas_width = self.canvas.winfo_width()
@@ -173,7 +170,7 @@ class ImageRenderer(BaseWidget, ctk.CTkFrame):
         self.render()
 
     def on_wheel(self, event):
-        if self.base_img is None:
+        if self.current_layer is None:
             return
         highlight = int(self.canvas.cget("highlightthickness"))
         canvas_x = self.canvas.canvasx(event.x) - highlight
@@ -215,10 +212,50 @@ class ImageRenderer(BaseWidget, ctk.CTkFrame):
 
         self.render()
 
+    def on_layer_changed(self, _layer=None):
+        if _layer is None:
+            return
+        self.current_layer = _layer
+        self.update_cache()
+        self.draw = ImageDraw.Draw(self.current_layer.img)
+        self.render()
+
+    # def on_filter_updated(self, layer):
+    #     self.render()
+
+    def update_cache(self):
+        current_index = self.layer_manager.current_index
+        self.cache_before = self.layer_manager.get_merged(0, current_index)
+        self.cache_after = self.layer_manager.get_merged(current_index+1, None)
+
+    def get_composited_img(self):
+        if self.current_layer is None:
+            return
+        if self.cache_before is None or self.cache_after is None:
+            self.update_cache()
+
+        result = Image.new("RGBA", self.current_layer.img.size, (0, 0, 0, 0))
+
+        if self.cache_before:
+            result.alpha_composite(self.cache_before)
+
+        # filtered_current = apply_filters(current_layer.base_img, current_layer.filter_params)
+        # result.alpha_composite(filtered_current)
+
+        result.alpha_composite(self.current_layer.img)
+
+        if self.cache_after:
+            result.alpha_composite(self.cache_after)
+
+        return result
+
     def render(self, event=None):
-        if self.base_img is None:
+        if self.current_layer is None:
             return
 
+        self.composited_img = self.get_composited_img()
+        if self.composited_img is None:
+            return
 
         img_box = (0, 0, self.scaled_width, self.scaled_height)
 
@@ -240,7 +277,7 @@ class ImageRenderer(BaseWidget, ctk.CTkFrame):
             x2_base = min(math.ceil(x2 / self.scale), self.base_width)
             y2_base = min(math.ceil(y2 / self.scale), self.base_height)
 
-            base_img_segment = self.img.crop((x1_base, y1_base, x2_base, y2_base))
+            base_img_segment = self.composited_img.crop((x1_base, y1_base, x2_base, y2_base))
             img_segment = base_img_segment.resize(
                 (int((x2_base - x1_base) * self.scale),
                  int((y2_base - y1_base) * self.scale)),
@@ -256,7 +293,5 @@ class ImageRenderer(BaseWidget, ctk.CTkFrame):
             self.canvas.create_image(x1, y1, anchor='nw', image=imagetk, tag="img")
             self.canvas.imagetk = imagetk
 
-
-
         self.canvas.configure(scrollregion=(0, 0, self.scaled_width, self.scaled_height))
-        # self.event_bus.send_state("canvas_rendered", self)
+        self.event_bus.send_state("canvas_rendered", self)

@@ -16,12 +16,14 @@ class CustomRadioButtonFrame(BaseWidget, ctk.CTkScrollableFrame):
         self.variable = ctk.StringVar(value="")
         self.rows = None
         self.columns = None
+        self.count = 0
 
         self.object_full_size = None
         self.object_padx, self.object_pady = None, None
 
         self.is_scrollable = True
-        self._scrollbar.grid()
+        self._scrollbar.grid_remove()
+
 
         if _is_last:
             self.init_subscribes()
@@ -31,13 +33,16 @@ class CustomRadioButtonFrame(BaseWidget, ctk.CTkScrollableFrame):
         pass
 
     def remove(self, _key):
+        print(_key, self.buttons )
         if _key in self.buttons:
+            self.buttons[_key].grid_forget()
             self.buttons[_key].destroy()
             del self.buttons[_key]
+
             self.update_frame()
 
 
-            # -----------------------------------render----------------------------------------------
+    # -----------------------------------render----------------------------------------------
     def init_object_full_size(self, _object: CustomRadioButton):
         if not (self.object_padx and self.object_pady):
             self.object_padx = tuple(self.additional_styles.get("padx", (1, 1)))
@@ -57,21 +62,20 @@ class CustomRadioButtonFrame(BaseWidget, ctk.CTkScrollableFrame):
     def update_frame(self, event=None):
         if not self.object_full_size:
             return
+
         new_columns = self.calc_columns()
+
+        if new_columns != self.columns:
+            self.columns = new_columns
+            self.grid_columnconfigure(list(range(self.columns)), weight=0)
+
         new_rows = self.calc_rows()
+        for i, key in enumerate(self.buttons):
+            self.buttons[key].grid(row=i // self.columns, column=i % self.columns, padx=self.object_padx, pady=self.object_pady, sticky="nw")
 
-        if new_columns != self.columns or new_rows != self.rows:
-            if new_columns != self.columns:
-                self.columns = new_columns
-                self.grid_columnconfigure(list(range(self.columns)), weight=0)
-
-            for i, key in enumerate(self.buttons):
-                self.buttons[key].grid(row=i // self.columns, column=i % self.columns, padx=self.object_padx, pady=self.object_pady, sticky="nw")
-
-            if new_rows != self.rows:
-                self.rows = new_rows
-
+        self.rows = new_rows
         self.update_scrollbar()
+
 
     def update_scrollbar(self):
         rows = self.calc_rows()

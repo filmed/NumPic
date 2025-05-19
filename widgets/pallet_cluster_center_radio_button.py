@@ -1,5 +1,4 @@
 from widgets.custom_radio_button import CustomRadioButton
-from utils.algs import is_child_of
 
 class PalletClusterCenterRadioButton(CustomRadioButton):
 
@@ -25,7 +24,7 @@ class PalletClusterCenterRadioButton(CustomRadioButton):
         if not self.is_active:
             self.is_active = True
             self.setup = True
-            self.event_bus.subscribe("color_changed", self.on_color_changed)
+            self.event_bus.subscribe("color_changed", self.ask_color_change)
 
         self.styles_on["color"] = self.color
         self.styles_off["color"] = self.color
@@ -34,13 +33,30 @@ class PalletClusterCenterRadioButton(CustomRadioButton):
         self.configure(image=self.image_on)
 
 
+    def destroy(self):
+        if hasattr(self, "trace_id") and self.variable:
+            self.variable.trace_remove("write", self.trace_id)
+
+        self.event_bus.unsubscribe("color_changed", self.ask_color_change)
+        self.event_bus.unsubscribe("focus_changed", self.on_focus)
+        super().destroy()
+
     def on_deactivate(self, **kwargs):
         if self.is_active:
             self.is_active = False
             self.setup = False
-            self.event_bus.unsubscribe("color_changed", self.on_color_changed)
+            self.event_bus.unsubscribe("color_changed", self.ask_color_change)
 
-    def on_color_changed(self, _color):
+
+    def ask_color_change(self, _color):
+        if not _color:
+            return
+        if self.setup:
+            self.setup = False
+            return
+        self.event_bus.send_state("center_color_change", (self.color, _color))
+
+    def color_change(self, _color):
         if not _color:
             return
         if self.setup:
@@ -59,4 +75,7 @@ class PalletClusterCenterRadioButton(CustomRadioButton):
 
 
     def on_right_button(self, event=None):
-        self.event_bus.send_state("center_deleted", self.color)
+        print(self.color)
+        self.event_bus.send_state("center_delete", self.color)
+
+
