@@ -2,7 +2,7 @@ from widgets.custom_radio_button import CustomRadioButton
 
 class PalletClusterCenterRadioButton(CustomRadioButton):
 
-    binds = {**CustomRadioButton.binds, "<ButtonRelease-3>": "on_right_button"}
+    binds = {**CustomRadioButton.binds, "<ButtonRelease-3>": "on_delete"}
     subscriptions = {"focus_changed": "on_focus"}
 
     def __init__(self, master, _event_bus, _color, _variable, _value, _is_last=False, **kwargs):
@@ -74,8 +74,7 @@ class PalletClusterCenterRadioButton(CustomRadioButton):
             self.current_focus = _focused_widget
 
 
-    def on_right_button(self, event=None):
-        print(self.color)
+    def on_delete(self, event=None):
         self.event_bus.send_state("center_delete", self.color)
 
 

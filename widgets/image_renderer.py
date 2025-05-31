@@ -54,8 +54,8 @@ class ImageRenderer(BaseWidget, ctk.CTkFrame):
         self.columnconfigure(0, weight=1)
 
         # Bind events to the !Canvas!
-        self.canvas.bind('<MouseWheel>', self.on_wheel)
-        self.canvas.bind('<Enter>', self.on_enter)
+        self.canvas.bind('<MouseWheel>', self.on_wheel, add="+")
+        self.canvas.bind('<Enter>', self.on_enter, add="+")
 
         # Init start fields
 

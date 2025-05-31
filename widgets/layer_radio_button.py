@@ -1,14 +1,9 @@
-import os
 from widgets.custom_panel import CustomPanel
 from widgets.base import BaseWidget
 from widgets.layer_miniature import LayerMiniature
 import customtkinter as ctk
-from PIL import Image, ImageDraw
-import sprites
 import copy
-from utils.color_models import hex2rgb
 from utils.algs import is_child_of
-import re
 import regex
 
 # additional_styles: {

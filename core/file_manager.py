@@ -2,7 +2,7 @@
 import os
 from customtkinter import filedialog
 from PIL import Image
-from utils.clust_test import export_contours_to_svg
+from utils.clust_test import export_all_svgs
 
 
 class FileManager:
@@ -31,37 +31,38 @@ class FileManager:
                 name = os.path.splitext(os.path.basename(file_path))[0]
                 self.event_bus.send_state("file_opened", (image, name))
 
-
     def save_file(self, _is_saving):
         if not _is_saving:
             return
+
         data = self.event_bus.get_state("clusters_changed")
         print("saving: ", data)
         if not data:
             return
 
         (current_contours, current_centers, current_segmented) = data
+        if not current_segmented:
+            print("Нет сегментированного изображения")
+            return
+
         w, h = current_segmented.size
         _dir = self.current_file_dir or os.path.expanduser("~")
         saving_directory = filedialog.askdirectory(title="Select a directory", initialdir=_dir)
 
         if saving_directory:
-            export_contours_to_svg(
+            export_all_svgs(
                 contours=current_contours,
-                filename=f"{saving_directory}/contours.svg",
-                width=w,
-                height=h,
-                scale_x=1,
-                scale_y=1,
-                smooth=False,
-                stroke_color="black",
-                stroke_width=1,
-                stroke_opacity=1.0,
-                fill=False
+                centers=current_centers,
+                canvas_size=(w, h),
+                save_dir=saving_directory
             )
-            current_segmented.save(f"{saving_directory}/segmented.png")
-            # current_segmented.save(f"{saving_directory}/segmented.svg")
-            print(current_centers)
+
+            png_path = os.path.join(saving_directory, "segmented.png")
+
+            current_segmented.save(png_path)
+            print("Сохранено в", saving_directory)
+
+
 
 
 

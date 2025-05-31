@@ -1,20 +1,36 @@
 import math
 from utils.color_models import rgb2hex, hex2rgb
 from utils.figures import fill_intervals, flood_fill_cv, draw_ellipse
-from utils.algs import is_child_of
 from PIL import Image, ImageTk, ImageDraw
+import sprites
+import os
+import tkinter as tk
+
 
 
 class BaseTool:
 
-    subscriptions = {}
-    binds = {}
+    subscriptions = {"tool_settings_updated" : "update_cursor_view"}
+    binds = {"<Enter>" : "on_enter", "<Leave>" : "on_leave"}
     binds_ids = {}
     use_zones = []
     settings = {}
+    renderer = None
+
+    cursor_icon_path = None
+    cursor_icon = None
+    cursor_size_base = 24
+    cursor_size = cursor_size_base
+    cursor_view_tk = None
+    cursor_color = "#000000"
+    cursor_opacity = 150
+    last_pos = None
 
     def __init__(self, _event_bus):
         self.event_bus = _event_bus
+        if self.cursor_icon_path:
+            self.cursor_icon = self.open_cursor()
+
 
     def init_subscribes(self):
         for event, callback_name in self.subscriptions.items():
@@ -35,11 +51,97 @@ class BaseTool:
         for event, callback in self.subscriptions.items():
             self.event_bus.unsubscribe(event, callback)
 
+    def open_cursor(self):
+        sprites_dir = os.path.dirname(sprites.__file__)
+        full_path = os.path.join(sprites_dir, os.path.basename(self.cursor_icon_path))
+        _icon = Image.open(full_path)
+        if _icon.mode != 'RGBA':
+            _icon = _icon.convert('RGBA')
+        return _icon
+
+    def rebuild_cursor(self):
+        r, g, b, a = self.cursor_icon.split()
+        mask = a if 'A' in self.cursor_icon.getbands() else None
+        r, g, b = hex2rgb(self.cursor_color)
+        color_layer = Image.new('RGBA', self.cursor_icon.size, (r, g, b, self.cursor_opacity))
+        cursor_view = Image.composite(color_layer, self.cursor_icon, mask or self.cursor_icon)
+        cursor_view = cursor_view.resize((self.cursor_size, self.cursor_size), Image.Resampling.BILINEAR)
+        self.cursor_view_tk = ImageTk.PhotoImage(cursor_view)
+        self.renderer.canvas.itemconfig("cursor_icon", image=self.cursor_view_tk, anchor=tk.CENTER, tags=("cursor_icon",))
+        self.renderer.canvas.tag_raise("cursor_icon")
+
+    def update_cursor_view(self, event=None):
+        if event is None or self.renderer is None:
+            return
+
+        need_rebuild = False
+
+        if hasattr(event, 'x') and hasattr(event, 'y'):
+            if hasattr(self.renderer, 'composited_img') and self.renderer.composited_img:
+                x, y = self.canvas2pixel((event.x, event.y))
+                width, height = self.renderer.composited_img.size
+
+                if (0 <= x < width) and (0 <= y < height):
+                    r, g, b, a = self.renderer.composited_img.getpixel((x, y))
+                    color = rgb2hex((r, g, b))
+                    new_color = self.calc_color(color)
+                else:
+                    new_color = self.cursor_color
+
+                if new_color != self.cursor_color:
+                    self.cursor_color = new_color
+                    need_rebuild = True
+
+        new_size = self.update_cursor_size()
+        if new_size != self.cursor_size:
+            self.cursor_size = new_size
+            need_rebuild = True
+
+        if need_rebuild and self.cursor_icon:
+            self.rebuild_cursor()
+
+        if hasattr(event, 'x') and hasattr(event, 'y'):
+            self.draw_cursor(event=event)
+
+    def draw_cursor(self, event=None):
+        if self.renderer and self.cursor_view_tk:
+            if event:
+                self.last_pos = self.renderer.canvas.canvasx(event.x), self.renderer.canvas.canvasy(event.y)
+            if self.last_pos:
+                self.renderer.canvas.itemconfig("cursor_icon", image=self.cursor_view_tk, anchor=tk.CENTER, tags=("cursor_icon",))
+                self.renderer.canvas.coords("cursor_icon", self.last_pos)
+                self.renderer.canvas.tag_raise("cursor_icon")
+
+
+    def on_enter(self, event=None):
+        self.rebuild_cursor()
+
+    def on_leave(self, event=None):
+        pass
+
+    def canvas2pixel(self, _pos):
+        x = self.renderer.canvas.canvasx(_pos[0])
+        y = self.renderer.canvas.canvasy(_pos[1])
+
+        return int(x / self.renderer.scale), int(y / self.renderer.scale)
+
+    # override to set coloring rule
+    def calc_color(self, color):
+        rgb = hex2rgb(color)
+        L = round(rgb[0] * 299 / 1000 + rgb[1] * 587 / 1000 + rgb[2] * 114 / 1000)
+        return  "#000000" if L > 128 else "#FFFFFF"
+
+    # override to set resizing rule
+    def update_cursor_size(self):
+       return self.cursor_size_base
+
+
 
 class HandTool(BaseTool):
-    subscriptions = {"use_zone_changed": "on_use_zone_changed"}
-    binds = {"<ButtonPress-1>": "on_grab", "<B1-Motion>": "on_drag"}
+    subscriptions = {**BaseTool.subscriptions, "use_zone_changed": "on_use_zone_changed"}
+    binds = {**BaseTool.binds, "<ButtonPress-1>": "on_grab", "<B1-Motion>": "on_drag"}
     use_zones = ["editor", "render"]
+    cursor_icon_path = "hand_tool_icon.png"
 
     def __init__(self, _event_bus):
         super().__init__(_event_bus)
@@ -56,15 +158,15 @@ class HandTool(BaseTool):
 
     def on_drag(self, event):
         if self.renderer:
-            # self.renderer.canvas.configure(cursor="fleur")
             self.renderer.canvas.scan_dragto(event.x, event.y, gain=1)
             self.renderer.render()
 
 
 class BrushTool(BaseTool):
-    subscriptions = {"use_zone_changed": "on_use_zone_changed", "color_changed": "on_color_changed", "size_changed": "on_size_changed"}
-    binds = {"<ButtonPress-1>": "on_click", "<B1-Motion>": "on_drag", "<ButtonRelease-1>": "on_release"}
+    subscriptions = {**BaseTool.subscriptions, "use_zone_changed": "on_use_zone_changed", "color_changed": "on_color_changed", "size_changed": "on_size_changed"}
+    binds = {**BaseTool.binds, "<ButtonPress-1>": "on_click", "<B1-Motion>": "on_drag", "<ButtonRelease-1>": "on_release"}
     use_zones = ["editor"]
+    cursor_icon_path = "circle_icon.png"
     settings = {
          "size": {
             "type": "slider",
@@ -105,6 +207,10 @@ class BrushTool(BaseTool):
         if not _size:
             return
         self.size = _size
+
+    def update_cursor_size(self):
+
+        return round(self.size * self.renderer.scale)
 
     def on_click(self, event):
         if not self.renderer:
@@ -179,9 +285,10 @@ class BrushTool(BaseTool):
 
 
 class PipetteTool(BaseTool):
-    subscriptions = {"use_zone_changed": "on_use_zone_changed"}
-    binds = {"<ButtonPress-1>": "on_click", "<B1-Motion>": "on_click"}
+    subscriptions = {**BaseTool.subscriptions, "use_zone_changed": "on_use_zone_changed"}
+    binds = {**BaseTool.binds, "<ButtonPress-1>": "on_click", "<B1-Motion>": "on_click"}
     use_zones = ["editor"]
+    cursor_icon_path = "circle_icon.png"
 
     def __init__(self, _event_bus):
         super().__init__(_event_bus)
@@ -209,9 +316,10 @@ class PipetteTool(BaseTool):
 
 
 class FillTool(BaseTool):
-    subscriptions = {"use_zone_changed": "on_use_zone_changed", "color_changed": "on_color_changed"}
-    binds = {"<ButtonPress-1>": "on_click"}
+    subscriptions = {**BaseTool.subscriptions, "use_zone_changed": "on_use_zone_changed", "color_changed": "on_color_changed"}
+    binds = {**BaseTool.binds, "<ButtonPress-1>": "on_click"}
     use_zones = ["editor"]
+    cursor_icon_path = "circle_icon.png"
 
     def __init__(self, _event_bus):
         super().__init__(_event_bus)
@@ -234,7 +342,7 @@ class FillTool(BaseTool):
             width, height = self.renderer.current_layer.img.size
             if (0 <= x < width) and (0 <= y <= height):
                 r, g, b = hex2rgb(self.color)
-                print(r, g, b)
+
                 # self.renderer.current_layer.img = flood_fill_cv(self.renderer.current_layer.img, (x, y), (r, g, b, 255))
                 # self.renderer.draw = ImageDraw.Draw(self.renderer.current_layer.img)
                 flood_fill_cv(self.renderer.current_layer.img, (x, y), (r, g, b, 255))
@@ -250,9 +358,10 @@ class FillTool(BaseTool):
 
 
 class EraseTool(BaseTool):
-    subscriptions = {"use_zone_changed": "on_use_zone_changed", "size_changed": "on_size_changed"}
-    binds = {"<ButtonPress-1>": "on_click", "<B1-Motion>": "on_drag", "<ButtonRelease-1>": "on_release"}
+    subscriptions = {**BaseTool.subscriptions, "use_zone_changed": "on_use_zone_changed", "size_changed": "on_size_changed"}
+    binds = {**BaseTool.binds, "<ButtonPress-1>": "on_click", "<B1-Motion>": "on_drag", "<ButtonRelease-1>": "on_release"}
     use_zones = ["editor"]
+    cursor_icon_path = "circle_icon.png"
     settings = {
         "size": {
             "type": "slider",
@@ -288,6 +397,9 @@ class EraseTool(BaseTool):
         if not _size:
             return
         self.size = _size
+
+    def update_cursor_size(self):
+        return round(self.size * self.renderer.scale)
 
     def on_click(self, event):
         if not self.renderer:
@@ -351,6 +463,7 @@ class EraseTool(BaseTool):
 
 class CenterChooserTool(BaseTool):
     subscriptions = {
+        **BaseTool.subscriptions,
         "use_zone_changed": "on_use_zone_changed",
         "canvas_rendered": "render_pointers",
         "centers_delete_all" : "on_delete_all",
@@ -358,11 +471,13 @@ class CenterChooserTool(BaseTool):
         "center_color_changed" : "on_center_changed"
     }
     binds = {
+        **BaseTool.binds,
         "<ButtonPress-1>": "on_click",
         "<B1-Motion>": "on_drag",
         "<ButtonRelease-1>": "on_release"
     }
     use_zones = ["editor"]
+    cursor_icon_path = "add_icon.png"
 
     def __init__(self, _event_bus):
         super().__init__(_event_bus)

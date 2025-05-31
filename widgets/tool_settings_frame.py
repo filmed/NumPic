@@ -2,7 +2,6 @@ import customtkinter as ctk
 from widgets.custom_panel import CustomPanel
 from widgets.custom_slider import CustomSlider
 from widgets.custom_checkbox import CustomCheckBox
-from widgets.container_panel import ContainerPanel
 
 
 class ToolSettingsFrame(CustomPanel):
@@ -67,3 +66,4 @@ class ToolSettingsFrame(CustomPanel):
 
     def update_tool_setting(self, tool, key, value):
         setattr(tool, key, value)
+        self.event_bus.send_state("tool_settings_updated", True)

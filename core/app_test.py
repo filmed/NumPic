@@ -1,6 +1,4 @@
 import customtkinter as ctk
-import numpy as np
-import colour
 import ctypes
 from core.event_bus import EventBus
 from core.theme_manager import ThemeManager
@@ -8,7 +6,6 @@ from core.tool_manager import ToolManager
 from core.file_manager import FileManager
 from core.focus_manager import FocusManager
 from core.models.tools import HandTool, BrushTool, PipetteTool, FillTool, EraseTool, CenterChooserTool
-# from core.models.filters import Blur
 from core.cluster_manager import ClusterManager
 from core.layer_manager import LayerManager
 
@@ -36,8 +33,6 @@ from widgets.layer_add_button import LayerAddButton
 from widgets.layer_delete_button import LayerDeleteButton
 from widgets.layer_moveup_button import LayerMoveUpButton
 from widgets.layer_movedown_button import LayerMoveDownButton
-
-
 
 
 # Monitor scale factor
@@ -71,8 +66,6 @@ class App(BaseWidget, ctk.CTk):
 
         for name, tool in self.tools.items():
             self.tool_manager.add_tool(_name=name, _tool=tool)
-
-        # self.blur = Blur(self.event_bus, _is_last=True)
 
         BaseWidget.__init__(self, _event_bus=self.event_bus)
         #   ---------------------------------------setup a window------------------------------------------------------
@@ -200,19 +193,10 @@ class App(BaseWidget, ctk.CTk):
 
         self.rp_pallet_clusters_centers_frame = PalletClustersCentersFrame(self.rp_clustering_frame, self.event_bus, _is_last=True)
         self.rp_pallet_clusters_centers_frame.grid(row=3, column=0, padx=(0, 0), pady=(10, 0), sticky="nsew")
-        # self.rp_clustering_frame.grid_rowconfigure(3, minsize=30)
 
         self.rp_cluster_button = ClusterButton(self.rp_clustering_frame, self.event_bus, _is_last=True)
         self.rp_cluster_button.grid(row=4, column=0, padx=(5, 0), pady=(5, 0), sticky='e')
 
-
-
-        # self.cluster_manager = ClusterManager(
-        #     event_bus=self.event_bus,
-        #     editor_renderer=self.editor_use_zone,
-        #     clusters_frame=self.rp_pallet_clusters_centers_frame,
-        #     count_entry=self.rp_count_clusters_entry
-        # )
 
         # LAYERS ZONE
         self.rp_layers_container = ContainerPanel(self.right_panel, self.event_bus, _is_last=True)

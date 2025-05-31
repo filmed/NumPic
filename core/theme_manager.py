@@ -35,6 +35,7 @@ class ThemeManager:
         if self.themes and self.current_theme_name in self.themes:
             return self.themes[self.current_theme_name].get(_object_class_name, {})
 
+    # рекурсивная подстановка цветовых переменных
     def preprocess_theme(self, theme_data):
         self.color_vars = theme_data.pop("_colors", {})
         def replace_colors(obj):

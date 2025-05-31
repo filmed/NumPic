@@ -1,8 +1,5 @@
-from importlib.resources import read_text
-
 import customtkinter as ctk
 from widgets.base import BaseWidget
-from widgets.custom_radio_button import CustomRadioButton
 from widgets.layer_radio_button import LayerRadioButton
 from core.models.layer import Layer
 

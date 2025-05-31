@@ -56,8 +56,8 @@ class LayersRenderer(BaseWidget, ctk.CTkFrame):
         self.columnconfigure(0, weight=1)
 
         # Bind events to the !Canvas!
-        self.canvas.bind('<MouseWheel>', self.on_wheel)
-        self.canvas.bind('<Enter>', self.on_enter)
+        self.canvas.bind('<MouseWheel>', self.on_wheel, add="+")
+        self.canvas.bind('<Enter>', self.on_enter, add="+")
 
         # Init start fields
         self.layer_manager = _layer_manager
@@ -66,6 +66,9 @@ class LayersRenderer(BaseWidget, ctk.CTkFrame):
         self.current_layer = None
         self.composited_img = None
         self.checkerboard_bg = None
+
+        self.cursor_drawer = None
+        self.cursor_id = None
 
         self.draw = None
         self.base_width, self.base_height = None, None
@@ -97,7 +100,6 @@ class LayersRenderer(BaseWidget, ctk.CTkFrame):
         self.canvas.grid_configure(padx=mid_border_width, pady=mid_border_width)
         self.canvas.configure(bg=canvas_bg)
 
-
     # Send current use zone
     def on_enter(self, event=None):
         self.event_bus.send_state('use_zone_changed', self)
@@ -117,6 +119,13 @@ class LayersRenderer(BaseWidget, ctk.CTkFrame):
         imageid = self.canvas.create_image((0, 0), anchor='nw', image=imagetk, tag="img")
         self.canvas.tag_lower(imageid)
         self.canvas.imagetk = imagetk
+
+        if self.cursor_id is None:
+            cursor_img = Image.new("RGBA", (10, 10), "black")
+            cursortk = ImageTk.PhotoImage(cursor_img)
+            self.cursor_id = self.canvas.create_image((0, 0), anchor='nw', image=cursortk, tag="cursor_icon")
+            self.canvas.tag_raise(self.cursor_id)
+            self.canvas.cursortk = cursortk
 
         canvas_box = (self.canvas.canvasx(0),
                       self.canvas.canvasy(0),
@@ -232,6 +241,7 @@ class LayersRenderer(BaseWidget, ctk.CTkFrame):
     def get_composited_img(self):
         if self.current_layer is None:
             return
+
         if self.cache_before is None or self.cache_after is None:
             self.update_cache()
 
@@ -240,16 +250,12 @@ class LayersRenderer(BaseWidget, ctk.CTkFrame):
         if self.cache_before:
             result.alpha_composite(self.cache_before)
 
-        # filtered_current = apply_filters(current_layer.base_img, current_layer.filter_params)
-        # result.alpha_composite(filtered_current)
-
         filtered_current = filters.apply_filters(self.current_layer.img, self.current_layer.filter_params)
         result.alpha_composite(filtered_current)
 
-        #result.alpha_composite(self.current_layer.img)
-
         if self.cache_after:
             result.alpha_composite(self.cache_after)
+
 
         return result
 

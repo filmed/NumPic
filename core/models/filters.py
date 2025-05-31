@@ -1,5 +1,4 @@
 
-
 from PIL import ImageFilter
 
 def apply_filters(img, filter_params):

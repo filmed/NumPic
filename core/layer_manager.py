@@ -27,7 +27,12 @@ class LayerManager:
             print(_data)
             _img, _name = _data
             _size = _img.size
-            self.background = Image.new("RGBA", _size, (0, 0, 0, 0))
+            self.background = Image.new("RGBA", _size, (128, 128, 128, 0))
+
+            _names = self.get_names()
+            if _name in _names:
+               _name = f"Layer {len(self.layers)}"
+
             layer = Layer(_name, _img)
             self.layers.append(layer)
             self.current_index = len(self.layers) - 1
@@ -46,6 +51,11 @@ class LayerManager:
         elif _data is True: # empty layer
 
             _name = f"Layer {len(self.layers)}"
+
+            if self.background is None:
+                self.background = Image.new("RGBA", (720, 480), (128, 128, 128, 0))
+                self.init((self.background, _name))
+                return
 
             layer = Layer(_name, self.background)
             self.layers.append(layer)
@@ -136,8 +146,8 @@ class LayerManager:
 
         if apply_filters:
             for layer in visible_layers:
-                result = filters.apply_filters(layer.img, layer.filter_params)
-                result.alpha_composite(result)
+                img = filters.apply_filters(layer.img, layer.filter_params)
+                result.alpha_composite(img)
         else:
             for layer in visible_layers:
                 result.alpha_composite(layer.img)
@@ -154,3 +164,11 @@ class LayerManager:
         if current:
             current.filter_params.update(params)
             self.event_bus.send_state('filter_params_updated', True)
+
+    def get_names(self):
+        if self.layers is None:
+            return
+        result = []
+        for layer in self.layers:
+            result.append(layer.name)
+        return result

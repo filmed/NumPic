@@ -1,6 +1,3 @@
-import customtkinter as ctk
-from widgets.base import BaseWidget
-from widgets.pallet_radio_button import PalletRadioButton
 from widgets.custom_radio_button_frame import CustomRadioButtonFrame
 from widgets.pallet_cluster_center_radio_button import PalletClusterCenterRadioButton
 

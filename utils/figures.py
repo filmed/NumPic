@@ -95,167 +95,29 @@ def fill_intervals(_img: Image, _start_point, _fill_color):
     return _count
 
 
-# def flood_fill_cv(pil_img: Image.Image, seed_point, fill_color):
-#     img = pil_img.convert("RGBA")
-#     img_np = np.array(img)
-#     img_cv = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
-#
-#     h, w = img_cv.shape[:2]
-#     mask = np.zeros((h + 2, w + 2), np.uint8)
-#
-#     bgr_color = (fill_color[2], fill_color[1], fill_color[0])
-#
-#     cv2.floodFill(img_cv, mask, seed_point, bgr_color)
-#
-#     img_rgb = cv2.cvtColor(img_cv, cv2.COLOR_BGR2RGB)
-#     filled_img = Image.fromarray(img_rgb).convert("RGBA")
-#
-#     return filled_img
-
-# def flood_fill_cv(pil_img: Image.Image, seed_point, fill_color):
-#     # Конвертируем в RGBA если нужно
-#     img = pil_img.convert("RGBA")
-#     img_np = np.array(img)
-#
-#     # Разделяем каналы
-#     r, g, b, a = cv2.split(img_np)
-#
-#     # Создаём 3-канальное изображение для заливки (BGR)
-#     img_bgr = cv2.merge([b, g, r])
-#
-#     # Маска: 1 в непрозрачных пикселях, 0 в прозрачных (граница)
-#     mask = np.zeros((img_np.shape[0] + 2, img_np.shape[1] + 2), np.uint8)
-#     mask[1:-1, 1:-1] = (a == 0)  # Граница там где прозрачно
-#
-#     Image.fromarray(img_bgr).save("debug_bgr.png")
-#     Image.fromarray(mask * 255).save("debug_mask.png")
-#
-#     # Цвет заливки (BGR)
-#     bgr_color = (fill_color[2], fill_color[1], fill_color[0])
-#
-#     # Флаг 4 или 8 связности (8 лучше для диагоналей)
-#     flags = 8 | cv2.FLOODFILL_MASK_ONLY
-#
-#     # Выполняем заливку
-#     cv2.floodFill(img_bgr, mask, seed_point, bgr_color, flags=flags)
-#
-#     # Собираем обратно в RGB
-#     filled_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-#
-#     # Объединяем с оригинальным альфа-каналом
-#     filled_rgba = cv2.merge([filled_rgb[:, :, 0],
-#                              filled_rgb[:, :, 1],
-#                              filled_rgb[:, :, 2],
-#                              a])
-#
-#     return Image.fromarray(filled_rgba, 'RGBA')
-
-#
-# def flood_fill_cv(pil_img: Image.Image, seed_point, fill_color):
-#     # Конвертируем в RGBA если нужно
-#     img = pil_img.convert("RGBA")
-#     img_np = np.array(img)
-#
-#     # Разделяем каналы
-#     r, g, b, a = cv2.split(img_np)
-#
-#     # Создаём 3-канальное изображение для заливки (BGR)
-#     img_bgr = cv2.merge([b, g, r])
-#
-#     # Маска: 0 - где можно заливать, 1 - границы (прозрачные пиксели)
-#     mask = np.zeros((a.shape[0] + 2, a.shape[1] + 2), np.uint8)
-#     mask[1:-1, 1:-1] = (a == 0)  # 1 там где прозрачно (граница)
-#
-#     Image.fromarray(img_bgr).save("debug_bgr.png")
-#     Image.fromarray(mask * 255).save("debug_mask.png")
-#
-#     # Цвет заливки (BGR)
-#     bgr_color = (fill_color[2], fill_color[1], fill_color[0])
-#
-#     # Флаги (8-связность + использование маски)
-#     flags = 8 | cv2.FLOODFILL_MASK_ONLY
-#
-#     # Выполняем заливку
-#     cv2.floodFill(img_bgr, mask, seed_point, bgr_color, flags=flags)
-#
-#     # Собираем обратно в RGBA
-#     filled_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-#     filled_rgba = np.dstack((filled_rgb, a))
-#
-#     return Image.fromarray(filled_rgba, 'RGBA')
-
-
-# def flood_fill_cv(pil_img: Image.Image, seed_point, fill_color):
-#     # Преобразуем изображение в RGBA и NumPy-массив
-#     img = pil_img.convert("RGBA")
-#     img_np = np.array(img)
-#
-#     # Извлекаем каналы
-#     r, g, b, a = cv2.split(img_np)
-#
-#     # Создаём 3-канальное изображение для заливки
-#     img_bgr = cv2.merge([b, g, r])
-#
-#     # Пустая маска: всё можно заливать
-#     mask = np.zeros((a.shape[0] + 2, a.shape[1] + 2), np.uint8)
-#
-#     bgr_color = (fill_color[2], fill_color[1], fill_color[0])
-#
-#     flags = 8
-#
-#     lo_diff = (10, 10, 10)
-#     up_diff = (10, 10, 10)
-#
-#     cv2.floodFill(img_bgr, mask, seed_point, bgr_color, lo_diff, up_diff, flags)
-#
-#     filled_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-#
-#     if a[seed_point[1], seed_point[0]] == 0:
-#         a[mask[1:-1, 1:-1] == 1] = 255
-#
-#     filled_rgba = np.dstack((filled_rgb, a))
-#
-#     return Image.fromarray(filled_rgba, 'RGBA')
-
-
-
 def flood_fill_cv(pil_img: Image.Image, seed_point, fill_color):
-    # Конвертация в RGBA и numpy
     img_rgba = pil_img.convert("RGBA")
     img_np = np.array(img_rgba)
 
-    # Каналы
     r, g, b, a = cv2.split(img_np)
     img_bgr = cv2.merge([b, g, r])
 
-    # Маска
     mask = np.zeros((a.shape[0] + 2, a.shape[1] + 2), np.uint8)
     bgr_color = (fill_color[2], fill_color[1], fill_color[0])
     lo_diff = (10, 10, 10)
     up_diff = (10, 10, 10)
 
+    # cv2 floodfill alg
     cv2.floodFill(img_bgr, mask, seed_point, bgr_color, lo_diff, up_diff, 8)
 
-    # Конвертация обратно
     filled_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-
-    # Обновляем альфа, если точка была прозрачной
     if a[seed_point[1], seed_point[0]] == 0:
         a[mask[1:-1, 1:-1] == 1] = 255
 
-    # Объединение
     filled_rgba = np.dstack((filled_rgb, a))
 
-    # Изменение оригинального изображения in-place
+    # заносим изменения сразу на изображение
     pil_img.paste(Image.fromarray(filled_rgba, "RGBA"))
-
-
-
-
-
-
-
-
 
 
 def get_text_size(_text, _font):
